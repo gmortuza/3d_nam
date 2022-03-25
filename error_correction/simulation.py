@@ -8,8 +8,9 @@ import random
 import argparse
 
 sys.path.append("../dnam/")
-from processfile import ProcessFile
-from log import get_logger
+
+from error_correction.processfile import ProcessFile
+from error_correction.log import get_logger
 
 parser = argparse.ArgumentParser(description="Simulation file for dNAM")
 parser.add_argument("-s", "--start", help="Starting file size in bytes", type=int, default=20)

@@ -17,8 +17,8 @@ class Origami:
         """
         :param verbose: is it running on debug mode or info mode
         """
-        self.row = 6
-        self.column = 8
+        self.row = 8
+        self.column = 10
         self.checksum_bit_per_origami = 4
         self.encoded_matrix = None
         self.recovered_matrix_info = []
@@ -48,47 +48,67 @@ class Origami:
                  checksum_bit_relation: Checksum bit mapping
 
         """
-
-        # Data following indices of the matrix contains the data and indexes of the origami
-        data_index = [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (2, 7), (3, 7),
-                      (5, 7), (5, 6), (5, 5), (5, 4), (5, 3), (5, 2), (5, 1), (5, 0), (3, 0), (2, 0)]
         parity_bit_relation = {
-            (1, 1): [(0, 0), (0, 1), (0, 5), (2, 3), (5, 4)],
-            (1, 2): [(0, 1), (0, 3), (1, 0), (2, 4), (2, 7)],
-            (1, 3): [(0, 0), (0, 2), (0, 4), (3, 7), (5, 2)],
-            (1, 4): [(0, 3), (0, 5), (0, 7), (3, 0), (5, 5)],
-            (1, 5): [(0, 4), (0, 6), (1, 7), (2, 0), (2, 3)],
-            (1, 6): [(0, 2), (0, 6), (0, 7), (2, 4), (5, 3)],
-            (2, 1): [(1, 0), (2, 3), (3, 0), (4, 7), (5, 0), (5, 3)],
-            (2, 6): [(1, 7), (2, 4), (3, 7), (4, 0), (5, 4), (5, 7)],
-            (3, 1): [(0, 0), (0, 3), (1, 7), (2, 0), (3, 3), (4, 0)],
-            (3, 6): [(0, 4), (0, 7), (1, 0), (2, 7), (3, 4), (4, 7)],
-            (4, 1): [(0, 4), (3, 3), (5, 0), (5, 1), (5, 5)],
-            (4, 2): [(3, 4), (3, 7), (4, 0), (5, 1), (5, 3)],
-            (4, 3): [(0, 2), (2, 7), (5, 0), (5, 2), (5, 4)],
-            (4, 4): [(0, 5), (2, 0), (5, 3), (5, 5), (5, 7)],
-            (4, 5): [(3, 0), (3, 3), (4, 7), (5, 4), (5, 6)],
-            (4, 6): [(0, 3), (3, 4), (5, 2), (5, 6), (5, 7)],
-            (2, 2): [(0, 2), (1, 0), (2, 0), (5, 6), (5, 0)],
-            (2, 5): [(0, 5), (1, 7), (2, 7), (5, 1), (5, 7)],
-            (3, 2): [(0, 6), (3, 0), (4, 0), (5, 2), (0, 0)],
-            (3, 5): [(0, 1), (3, 7), (4, 7), (5, 5), (0, 7)]
+            (1, 1): [(0, 0), (0, 5), (3, 4), (7, 8)],
+            (1, 2): [(0, 7), (3, 9), (3, 3), (5, 0)],
+            (1, 3): [(0, 3), (1, 0), (4, 4), (0, 9)],
+            (1, 4): [(0, 3), (3, 3), (4, 9), (7, 5)],
+            (1, 5): [(0, 6), (3, 6), (4, 0), (7, 4)],
+            (1, 6): [(0, 0), (0, 6), (1, 9), (4, 5)],
+            (1, 7): [(0, 2), (3, 0), (3, 6), (5, 9)],
+            (1, 8): [(0, 4), (0, 9), (3, 5), (7, 1)],
+            (2, 1): [(0, 1), (0, 7), (3, 0), (6, 0)],
+            (2, 2): [(0, 6), (2, 9), (7, 0), (7, 4)],
+            (2, 3): [(1, 9), (4, 5), (7, 1), (7, 9)],
+            (2, 4): [(0, 8), (2, 0), (6, 9), (7, 2)],
+            (2, 5): [(0, 1), (2, 9), (6, 0), (7, 7)],
+            (2, 6): [(1, 0), (4, 4), (7, 0), (7, 8)],
+            (2, 7): [(0, 3), (2, 0), (7, 5), (7, 9)],
+            (2, 8): [(0, 2), (0, 8), (3, 9), (6, 9)],
+            (3, 1): [(3, 5), (4, 0), (4, 6), (7, 6)],
+            (3, 2): [(0, 4), (4, 3), (5, 0), (7, 7)],
+            (3, 7): [(0, 5), (4, 6), (5, 9), (7, 2)],
+            (3, 8): [(3, 4), (4, 3), (4, 9), (7, 3)],
+            (4, 1): [(0, 6), (3, 0), (3, 6), (4, 5)],
+            (4, 2): [(0, 7), (2, 0), (3, 3), (7, 4)],
+            (4, 7): [(0, 2), (2, 9), (3, 6), (7, 5)],
+            (4, 8): [(0, 3), (3, 3), (3, 9), (4, 4)],
+            (5, 1): [(1, 0), (4, 0), (7, 1), (7, 7)],
+            (5, 2): [(0, 0), (0, 4), (5, 9), (7, 6)],
+            (5, 3): [(0, 1), (0, 9), (3, 5), (6, 9)],
+            (5, 4): [(0, 2), (1, 9), (5, 0), (7, 8)],
+            (5, 5): [(0, 7), (1, 0), (5, 9), (7, 1)],
+            (5, 6): [(0, 0), (0, 8), (3, 4), (6, 0)],
+            (5, 7): [(0, 5), (0, 9), (5, 0), (7, 3)],
+            (5, 8): [(1, 9), (4, 9), (7, 2), (7, 8)],
+            (6, 1): [(0, 8), (4, 4), (7, 0), (7, 5)],
+            (6, 2): [(2, 0), (4, 3), (4, 9), (7, 7)],
+            (6, 3): [(3, 4), (6, 0), (7, 3), (7, 9)],
+            (6, 4): [(0, 5), (3, 9), (4, 3), (7, 3)],
+            (6, 5): [(0, 4), (3, 0), (4, 6), (7, 6)],
+            (6, 6): [(3, 5), (6, 9), (7, 0), (7, 6)],
+            (6, 7): [(2, 9), (4, 0), (4, 6), (7, 2)],
+            (6, 8): [(0, 1), (4, 5), (7, 4), (7, 9)],
         }
+        checksum_bit_relation = {
+            (3, 4): [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (1, 0), (2, 0), (3, 0), (3, 3)],
+            (3, 5): [(0, 5), (0, 6), (0, 7), (0, 8), (0, 9), (1, 9), (2, 9), (3, 9), (3, 6)],
+            (4, 4): [(4, 0), (5, 0), (6, 0), (7, 0), (7, 1), (7, 2), (7, 3), (7, 4), (4, 3)],
+            (4, 5): [(7, 5), (7, 6), (7, 7), (7, 8), (7, 9), (6, 9), (5, 9), (4, 9), (4, 6)]
+        }
+        data_index_orientation = set([i for v in checksum_bit_relation.values() for i in v])
+        orientation_bits = set([(1, 0), (1, 9), (6, 0), (6, 9)])
+        index_bits = set([(2, 0), (3, 0), (4, 0)])
+        data_index = data_index_orientation - orientation_bits
+        data_bits = data_index - index_bits
 
         matrix_details = dict(
-            data_bits=data_index[:data_bit_per_origami],
-            orientation_bits=[(1, 0), (1, 7), (4, 0), (4, 7)],
-            indexing_bits=data_index[data_bit_per_origami:],
-            checksum_bits=[(2, 3), (2, 4), (3, 3), (3, 4)],
+            data_bits=list(data_bits),
+            orientation_bits=sorted(list(orientation_bits)),
+            indexing_bits=list(index_bits),
+            checksum_bits=checksum_bit_relation.keys(),
             orientation_data=[1, 1, 1, 0]
         )
-        checksum_bit_relation = {
-            (2, 3): [(0, 0), (0, 2), (1, 7), (2, 0), (5, 3), (5, 6)],
-            (2, 4): [(0, 5), (0, 7), (1, 0), (2, 7), (5, 1), (5, 4)],
-            (3, 3): [(0, 3), (0, 6), (3, 0), (4, 7), (5, 0), (5, 2)],
-            (3, 4): [(0, 1), (0, 4), (3, 7), (4, 0), (5, 5), (5, 7)]
-        }
-
         return matrix_details, parity_bit_relation, checksum_bit_relation
 
     def create_initial_matrix_from_binary_stream(self, binary_stream: str, index: int) -> object:
@@ -369,7 +389,7 @@ class Origami:
         for single_error in probable_error:
             matrix_details[tuple(single_error)] = {}
             changed_matrix, matrix_details[tuple(single_error)]["error_value"], \
-                matrix_details[tuple(single_error)]["probable_error"] = \
+            matrix_details[tuple(single_error)]["probable_error"] = \
                 self._get_matrix_weight(matrix, [single_error], threshold_parity, threshold_data,
                                         false_positive)
             # If after altering one bit only matrix_weight becomes zero then we will check checksum and parity
@@ -458,6 +478,8 @@ class Origami:
         orientation_info, correct_matrix = self._fix_orientation(correct_matrix)
 
         if not orientation_info == -1 and self.check_checksum(correct_matrix):
+            # fix up the error locations based on the orientation
+            error_locations = self._mirror_locations(error_locations, orientation_info)
             single_recovered_matrix['orientation_details'] = self.orientation_details[
                 str(orientation_info)]
             single_recovered_matrix['orientation'] = orientation_info
@@ -475,6 +497,19 @@ class Origami:
         else:  # If orientation or checksum doesn't match we will return -1
             self.logger.info("Orientation/checksum didn't match")
             return -1
+
+    def _mirror_locations(self, error_locations, orientation_info):
+        updated_locations = []
+        for error_location in error_locations:
+            if orientation_info == 0:
+                updated_locations.append(error_location)
+            elif orientation_info == 1:
+                updated_locations.append((self.row - 1 - error_location[0], error_location[1]))
+            elif orientation_info == 2:
+                updated_locations.append((error_location[0], self.column - 1 - error_location[1]))
+            elif orientation_info == 3:
+                updated_locations.append((self.row - 1 - error_location[0], self.column - 1 - error_location[1]))
+        return updated_locations
 
     def _extract_text_and_index(self, matrix):
         """
@@ -634,8 +669,8 @@ class Origami:
             :param maximum_number_of_error:
         """
         # If length of decoded data is not 48 then show error
-        if len(data_stream) != 48:
-            raise ValueError("The data stream length should be 48")
+        if len(data_stream) != self.row * self.column:
+            raise ValueError("The data stream length should be", self.row * self.column)
         # Initial check which parity bit index gave error and which gave correct results
         # Converting the data stream to data array first
         data_matrix_for_decoding = self.data_stream_to_matrix(data_stream)
@@ -659,13 +694,16 @@ class Origami:
 
 # This is only for debugging purpose
 if __name__ == "__main__":
-    bin_stream = "0011011001010101"
+    bin_stream = "00110110010101010110101011010"
     origami_object = Origami(2)
-    encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0, 16))
+    encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0, 29))
 
     encoded_file[1][0] = 0
     encoded_file[3][2] = 0
     encoded_file[0][6] = 0
+    encoded_file[7][7] = 0
+
+    encoded_file = (np.fliplr(encoded_file))
 
     decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file), 2, 2, 9, 10)
 
