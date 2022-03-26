@@ -30,25 +30,9 @@ class Origami:
             '3': 'Origami was flipped in both direction. '
         }
         self.logger = get_logger(verbose, __name__)
-
     @staticmethod
-    def _matrix_details(data_bit_per_origami: int) -> object:
-        """
-        Returns the relationship of the matrix. Currently all the the relationship is hardcoded.
-        This method returns the following details:
-            parity bits: 20 bits
-            indexing bits: depends on the file size
-            orientation bits: 4 bits
-            checksum bits: 4 bits
-            data bits: 48 - indexing bits
-        :rtype: object
-        :param data_bit_per_origami: Number of bits that will be encoded in each origami
-        :returns matrix_details -> Label for each cell
-                 parity_bit_relation: Parity bit mapping
-                 checksum_bit_relation: Checksum bit mapping
-
-        """
-        parity_bit_relation = {
+    def get_parity_relation():
+        return {
             (1, 1): [(0, 0), (0, 5), (3, 4), (7, 8)],
             (1, 2): [(0, 7), (3, 9), (3, 3), (5, 0)],
             (1, 3): [(0, 3), (1, 0), (4, 4), (0, 9)],
@@ -90,12 +74,35 @@ class Origami:
             (6, 7): [(2, 9), (4, 0), (4, 6), (7, 2)],
             (6, 8): [(0, 1), (4, 5), (7, 4), (7, 9)],
         }
-        checksum_bit_relation = {
+
+    @staticmethod
+    def get_checksum_relation():
+        return {
             (3, 4): [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (1, 0), (2, 0), (3, 0), (3, 3)],
             (3, 5): [(0, 5), (0, 6), (0, 7), (0, 8), (0, 9), (1, 9), (2, 9), (3, 9), (3, 6)],
             (4, 4): [(4, 0), (5, 0), (6, 0), (7, 0), (7, 1), (7, 2), (7, 3), (7, 4), (4, 3)],
             (4, 5): [(7, 5), (7, 6), (7, 7), (7, 8), (7, 9), (6, 9), (5, 9), (4, 9), (4, 6)]
         }
+
+    def _matrix_details(self, data_bit_per_origami: int) -> object:
+        """
+        Returns the relationship of the matrix. Currently all the the relationship is hardcoded.
+        This method returns the following details:
+            parity bits: 20 bits
+            indexing bits: depends on the file size
+            orientation bits: 4 bits
+            checksum bits: 4 bits
+            data bits: 48 - indexing bits
+        :rtype: object
+        :param data_bit_per_origami: Number of bits that will be encoded in each origami
+        :returns matrix_details -> Label for each cell
+                 parity_bit_relation: Parity bit mapping
+                 checksum_bit_relation: Checksum bit mapping
+
+        """
+        parity_bit_relation = self.get_parity_relation()
+        checksum_bit_relation = self.get_checksum_relation()
+
         data_index_orientation = set([i for v in checksum_bit_relation.values() for i in v])
         orientation_bits = set([(1, 0), (1, 9), (6, 0), (6, 9)])
         index_bits = set([(2, 0), (3, 0), (4, 0)])
@@ -109,7 +116,8 @@ class Origami:
             data_bits=list(data_bits),
             orientation_bits=sorted(list(orientation_bits)),
             indexing_bits=list(index_bits),
-            checksum_bits=checksum_bit_relation.keys(),
+            checksum_bits=list(checksum_bit_relation.keys()),
+            parity_bits=list(parity_bit_relation.keys()),
             orientation_data=[1, 1, 1, 0]
         )
         return matrix_details, parity_bit_relation, checksum_bit_relation
@@ -182,7 +190,7 @@ class Origami:
         self.number_of_bit_per_origami = data_bit_per_origami
         self.matrix_details, self.parity_bit_relation, self.checksum_bit_relation = \
             self._matrix_details(data_bit_per_origami)
-        self.data_bit_to_parity_bit = Origami.data_bit_to_parity_bit(self.parity_bit_relation)
+        self.data_bit_to_parity_bit = Origami.get_data_bit_to_parity_bit(self.parity_bit_relation)
         encoded_matrix = self.create_initial_matrix_from_binary_stream(binary_stream, index)
 
         # Set the cell value in checksum bits. This has to be before the parity bit xoring. Cause the parity bit
@@ -208,7 +216,7 @@ class Origami:
         return self._encode(binary_stream, index, data_bit_per_origami)
 
     @staticmethod
-    def data_bit_to_parity_bit(parity_bit_relation):
+    def get_data_bit_to_parity_bit(parity_bit_relation):
         """
         Reverse the parity bit to data bit.
         :param parity_bit_relation: A dictionary that contains parity bit as key and

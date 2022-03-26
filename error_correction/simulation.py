@@ -149,7 +149,7 @@ try:
         result_file = open(result_file_name, "a")
     else:
         result_file = open(result_file_name, "w")
-        result_file.write("File size,Bits per origami,Redundancy,Origami without redundancy,Origami with redundancy,"
+        result_file.write("File size,Bits per origami,total origami,"
                           "Number of copies of each origami,Encoding time,"
                           "Number of error per origami,Total number of error,Total number of error detected,"
                           "Incorrect origami,Correct Origami,Missing origamies,Decoding time,status,threshold data,"
@@ -172,12 +172,12 @@ for file_size in list(range(STARTING_FILE_SIZE, ENDING_FILE_SIZE, FILE_SIZE_GAP)
     with open(test_file_name, "wb", 0) as random_file:
         random_file.write(os.urandom(file_size))
     # encode the randomly generated file
-    dnam_object = ProcessFile(redundancy=50, verbose=False)
+    dnam_object = ProcessFile(verbose=False)
     encoded_file_name = test_file_name + "_encode"
     decoded_file_name = test_file_name + "_decode"
     start_time = time.time()
     # Encode the file
-    segments, droplet, data_bit_per_origami, required_red = dnam_object.encode(test_file_name, encoded_file_name)
+    segments, data_bit_per_origami = dnam_object.encode(test_file_name, encoded_file_name)
     encoding_time = round((time.time() - start_time), 2)
     for error_in_each_origami in range(MAXIMUM_NUMBER_OF_ERROR_CHECKED_PER_ORIGAMI + 1):
         error_in_each_origami = round(error_in_each_origami, 2)
@@ -193,14 +193,22 @@ for file_size in list(range(STARTING_FILE_SIZE, ENDING_FILE_SIZE, FILE_SIZE_GAP)
                                         false_positive_per_origami=FALSE_POSITIVE_PER_ORIGAMI,
                                         copies=COPIES_OF_EACH_ORIGAMIES)
         logger.info("Degradation done")
-        dnam_decode = ProcessFile(redundancy=50, verbose=VERBOSE)
+        dnam_decode = ProcessFile(verbose=VERBOSE)
         # try to decode with different decoding parameter
-        for threshold_data in range(2, 3):  # This two loops are for the parameter.
-            for threshold_parity in range(2, 3):  # Now we are choosing only one parameter.
+        for threshold_data in range(2, 5):  # This two loops are for the parameter.
+            for threshold_parity in range(2, 5):  # Now we are choosing only one parameter.
                 decoded_file_name = test_file_name + "_decoded_copy_" + str(COPIES_OF_EACH_ORIGAMIES) + "_error_" + \
                                     str(error_in_each_origami) + "_scp_" + str(threshold_data) + \
                                     "_tempweight_" + str(threshold_parity)
                 start_time = time.time()
+                decoding_status, incorrect_origami, correct_origami, total_error_fixed, missing_origamies \
+                    = dnam_decode.decode(degraded_file_name, decoded_file_name, file_size,
+                                         threshold_data=threshold_data,
+                                         threshold_parity=threshold_parity,
+                                         maximum_number_of_error=MAXIMUM_NUMBER_OF_ERROR_CHECKED_PER_ORIGAMI,
+                                         false_positive=FALSE_POSITIVE_PER_ORIGAMI,
+                                         individual_origami_info=True,
+                                         correct_file=encoded_file_name)
                 try:
                     decoding_status, incorrect_origami, correct_origami, total_error_fixed, missing_origamies \
                         = dnam_decode.decode(degraded_file_name, decoded_file_name, file_size,
@@ -225,18 +233,16 @@ for file_size in list(range(STARTING_FILE_SIZE, ENDING_FILE_SIZE, FILE_SIZE_GAP)
                     incorrect_origami = -1
                     correct_origami = -1
                     total_error_fixed = -1
-                    missing_origami = []
+                    missing_origamies = []
                 decoding_time = round((time.time() - start_time), 2)
                 with open(result_file_name, "a") as result_file:
-                    result_file.write("{FILE_SIZE},{bits_per_origami},{redundancy},{total_origami_without_red},{total_origami_with_red},{copy},\
+                    result_file.write("{FILE_SIZE},{bits_per_origami},{total_origami},{copy},\
                         {encoding_time},{error_in_each_origami},{total_error_insertion},{total_error_fixed},\
                         {incorrect_origami},{correct_origami},{missing_oirgami},{decoding_time},{status},{single_threshold_data},\
                         {single_threshold_parity},{false_positive}\n".format(
                         FILE_SIZE=file_size,
                         bits_per_origami=data_bit_per_origami,
-                        redundancy=required_red,
-                        total_origami_without_red=segments,
-                        total_origami_with_red=droplet,
+                        total_origami=segments,
                         copy=COPIES_OF_EACH_ORIGAMIES,
                         encoding_time=encoding_time,
                         error_in_each_origami=error_in_each_origami,

@@ -14,20 +14,35 @@ class ProcessFile(Origami):
     the origami method to handle individual origami. This file will also call
     """
 
-    def __init__(self, redundancy, verbose, degree="new"):
+    def __init__(self, verbose):
         """
         This will combine all the origami and reconstruct the file
-        :param redundancy: This is minimum number of redundancy
         :param verbose:
-        :param degree: is it old or new degree distribution
         """
         super().__init__(verbose=verbose)
-        self.minimum_redundancy = redundancy
-        self.degree = degree
         self.verbose = verbose
         self.logger = get_logger(verbose, __name__)
         # Will be updated later during checking number how much redundancy we will need
         self.number_of_bit_per_origami = 29
+
+    def _find_optimum_index_bits(self, bits_needed_to_store):
+        """
+        Find the optimum number of index bits
+        :param bits_needed_to_store:
+        :param available_capacity:
+        :return:
+        """
+        total_capacity = self.row * self.column
+        checksum_allocation = len(self.get_checksum_relation())
+        parity_allocation = len(self.get_parity_relation())
+        available_capacity = total_capacity - checksum_allocation - parity_allocation - 4
+
+        for i in range(1, available_capacity):
+            capacity_after_index = available_capacity - i
+            index_bit_required = math.ceil(bits_needed_to_store / capacity_after_index)
+            if 2**i >= index_bit_required:
+                return i, capacity_after_index, index_bit_required
+        raise Exception("File size is to large to store in the given capacity")
 
     def encode(self, file_in, file_out, formatted_output=False):
         """
@@ -48,21 +63,22 @@ class ProcessFile(Origami):
         file_in.close()
         # Converting data into binary
         data_in_binary = ''.join(format(letter, '08b') for letter in data)
-        preprocess = OrigamiPrePostProcess(self.verbose)
-        segments, xored_data_list, data_bit_per_origami, required_red = \
-            preprocess.encode(data_in_binary, min_required_redundancy=self.minimum_redundancy, degree=self.degree)
-        # write the encoded file in the file
+        # divide the origami based on number of bit per origami
 
-        for origami_index, single_origami in enumerate(xored_data_list):
-            encoded_stream = self._encode(single_origami, origami_index, data_bit_per_origami)
+        bits_needed_to_store = len(data_in_binary)
+        index_bits, data_bit, segment_size = self._find_optimum_index_bits(bits_needed_to_store)
+        # Divide into origami from datastream
+        for origami_index in range(segment_size):
+            origami_data = data_in_binary[origami_index * data_bit: (origami_index + 1) * data_bit].ljust(data_bit, '0')
+            encoded_stream = self._encode(origami_data, origami_index, data_bit)
             if formatted_output:
                 print("Matrix -> " + str(origami_index), file=file_out)
                 self.print_matrix(self.data_stream_to_matrix(encoded_stream), in_file=file_out)
             else:
                 file_out.write(encoded_stream + '\n')
         file_out.close()
-        print("Encoded done")
-        return segments, len(xored_data_list), data_bit_per_origami, required_red
+        self.logger.info("Encoding done")
+        return segment_size, data_bit
 
     def single_origami_decode(self, single_origami, lock, ior_file_name, correct_dictionary, common_parity_index,
                               minimum_temporary_weight, maximum_number_of_error, false_positive):
@@ -102,7 +118,7 @@ class ProcessFile(Origami):
             else:
                 status = " "
             decoded_time = round(time.time() - current_time, 3)
-            lock.acquire()
+            # lock.acquire()
             with open(ior_file_name, "a") as ior_file:
                 ior_file.write("{current_origami_index},{origami},{status},{error},{error_location},{orientation},"
                                "{decoded_index},{decoded_origami},{decoded_data},{decoding_time}\n".format(
@@ -116,7 +132,7 @@ class ProcessFile(Origami):
                                 decoded_data=decoded_matrix['binary_data'],
                                 decoding_time=decoded_time,
                                 current_origami_index=single_origami[0]))
-            lock.release()
+            # lock.release()
         return [decoded_matrix, status]
 
     def decode(self, file_in, file_out, file_size, threshold_data, threshold_parity, maximum_number_of_error,
@@ -141,12 +157,10 @@ class ProcessFile(Origami):
         except Exception as e:
             self.logger.error("%s", e)
             return
-        preprocess = OrigamiPrePostProcess(self.verbose)
-        segments, total_origami_with_red, redundancy, self.number_of_bit_per_origami, xored_map = \
-            preprocess.recoverable_red(file_size * 8, self.minimum_redundancy, self.degree)
+        index_bits, data_bit, segment_size = self._find_optimum_index_bits(file_size * 8)
         self.matrix_details, self.parity_bit_relation, self.checksum_bit_relation = \
-            self._matrix_details(self.number_of_bit_per_origami)
-        self.data_bit_to_parity_bit = self.data_bit_to_parity_bit(self.parity_bit_relation)
+            self._matrix_details(data_bit)
+        self.data_bit_to_parity_bit = self.get_data_bit_to_parity_bit(self.parity_bit_relation)
 
         decoded_dictionary = {}
         # If user pass correct file we will create a correct key value pair from that and will compare with our decoded
@@ -161,17 +175,19 @@ class ProcessFile(Origami):
         decoded_dictionary_wno = {}
         origami_data = [(i, single_origami.rstrip("\n")) for i, single_origami in enumerate(data)]
         lock = multiprocessing.Manager().Lock()
+        lock = None
         p_single_origami_decode = partial(self.single_origami_decode, lock=lock, ior_file_name=ior_file_name,
                                           correct_dictionary=
                                           correct_dictionary, common_parity_index=threshold_data,
                                           minimum_temporary_weight=threshold_parity,
                                           maximum_number_of_error=maximum_number_of_error,
                                           false_positive=false_positive)
-        optimum_number_of_process = int(math.ceil(multiprocessing.cpu_count()))
-        pool = multiprocessing.Pool(processes=optimum_number_of_process)
-        return_value = pool.map(p_single_origami_decode, origami_data)
-        pool.close()
-        pool.join()
+        return_value = map(p_single_origami_decode, origami_data)
+        # optimum_number_of_process = int(math.ceil(multiprocessing.cpu_count()))
+        # pool = multiprocessing.Pool(processes=optimum_number_of_process)
+        # return_value = pool.map(p_single_origami_decode, origami_data)
+        # pool.close()
+        # pool.join()
         for decoded_matrix in return_value:
             if not decoded_matrix is None and not decoded_matrix[0] is None:
                 # Checking status
@@ -183,6 +199,37 @@ class ProcessFile(Origami):
                 total_error_fixed += int(decoded_matrix[0]['total_probable_error'])
                 decoded_dictionary_wno.setdefault(decoded_matrix[0]['index'], []).append(
                     decoded_matrix[0]['binary_data'])
+
+        # perform majority voting
+        final_origami_data = [None] * segment_size
+        for key, value in decoded_dictionary_wno.items():
+            final_origami_data[key] = Counter(value).most_common(1)[0][0]
+
+        missing_origami = [i for i, val in enumerate(final_origami_data) if val is None]
+        if len(missing_origami) > 0:
+            return -1, incorrect_origami, correct_origami, total_error_fixed, missing_origami
+        recovered_binary = "".join(final_origami_data)
+        # Remove the padding
+        recovered_binary = recovered_binary[:8 * (len(recovered_binary) // 8)]
+        with open(file_out, "wb") as result_file:
+            for start_index in range(0, len(recovered_binary), 8):
+                bin_data = recovered_binary[start_index:start_index + 8]
+                # convert bin data into decimal
+                decimal = int(''.join(str(i) for i in bin_data), 2)
+                if decimal == 0 and start_index + 8 == len(
+                        recovered_binary):  # This will remove the padding. If the padding is whole byte.
+                    continue
+                decimal_byte = bytes([decimal])
+                result_file.write(decimal_byte)
+        self.logger.info("Number of missing origami :" + str(missing_origami))
+        self.logger.info("Total error fixed: " + str(total_error_fixed))
+        self.logger.info("File recovery was successfull")
+        return 1, incorrect_origami, correct_origami, total_error_fixed, missing_origami
+
+
+
+
+
 
         majority_vote_queue = {}
         recovered_origami = set()
