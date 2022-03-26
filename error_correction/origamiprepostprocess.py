@@ -21,7 +21,7 @@ class OrigamiPrePostProcess:
         """
         Based on the file size the number of origami will be reduced automatically
         """
-        self.number_of_bit_per_origami = 16  # This will update during creating the origami
+        self.number_of_bit_per_origami = 29  # This will update during creating the origami
         self.logger = get_logger(verbose=verbose, logger_name=__name__)
 
     def _get_droplet_details_old(self, total_origami_without_redundancy, total_origami):
@@ -450,7 +450,7 @@ class OrigamiPrePostProcess:
                 logging.err("Missing origami: {i}".format(i=i))
         return data_map, xored_map
 
-    def recoverable_red(self, total_bits, min_required_redundancy, degree, last_bit_stored_per_origami=16):
+    def recoverable_red(self, total_bits, min_required_redundancy, degree, last_bit_stored_per_origami=29):
         """
         This is used for simulation only
         :param total_bits:
@@ -475,7 +475,7 @@ class OrigamiPrePostProcess:
             while True:
                 total_origami_needed = math.ceil(total_bits / bit_store_per_origami)
                 total_origami_with_red = math.ceil(total_origami_needed * ((100 + redundancy) / 100))
-                bits_for_index_remained = 20 - bit_store_per_origami
+                bits_for_index_remained = 32 - bit_store_per_origami
                 if total_origami_with_red <= 2 ** bits_for_index_remained:
                     segments = math.ceil(total_bits / bit_store_per_origami)
                     return_segment_from_simulation, initial_xor_map, undecoded_elements = \
@@ -575,7 +575,7 @@ class OrigamiPrePostProcess:
 if __name__ == '__main__':
 
     def process_simulation(start, end, old_new):
-        last_bit_stored_per_origami = 16
+        last_bit_stored_per_origami = 29
         file_interval = 512  # Interval of file checking
 
         if old_new == "old":

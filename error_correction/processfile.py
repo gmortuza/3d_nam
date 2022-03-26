@@ -27,7 +27,7 @@ class ProcessFile(Origami):
         self.verbose = verbose
         self.logger = get_logger(verbose, __name__)
         # Will be updated later during checking number how much redundancy we will need
-        self.number_of_bit_per_origami = 16
+        self.number_of_bit_per_origami = 29
 
     def encode(self, file_in, file_out, formatted_output=False):
         """
@@ -52,6 +52,7 @@ class ProcessFile(Origami):
         segments, xored_data_list, data_bit_per_origami, required_red = \
             preprocess.encode(data_in_binary, min_required_redundancy=self.minimum_redundancy, degree=self.degree)
         # write the encoded file in the file
+
         for origami_index, single_origami in enumerate(xored_data_list):
             encoded_stream = self._encode(single_origami, origami_index, data_bit_per_origami)
             if formatted_output:
@@ -67,7 +68,7 @@ class ProcessFile(Origami):
                               minimum_temporary_weight, maximum_number_of_error, false_positive):
         current_time = time.time()
         self.logger.info("Working on origami(%d): %s", single_origami[0], single_origami[1])
-        if len(single_origami[1]) != 48:
+        if len(single_origami[1]) != self.row * self.column:
             self.logger.warning("Data point is missing in the origami")
             return
         try:

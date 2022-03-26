@@ -17,7 +17,7 @@ parser.add_argument("-s", "--start", help="Starting file size in bytes", type=in
 parser.add_argument("-e", "--end", help="Ending file size in bytes", type=int, default=2000)
 parser.add_argument("-g", "--gap", help="Gap between file size", type=int, default=40)
 parser.add_argument("-ec", "--error_check", help="Maxiumum number of error that will be checked for each origami",
-                    type=int, default=8)
+                    type=int, default=12)
 parser.add_argument("-oc", "--copies_of_each_origami", help="A single origami will have multiple copy with different"
                                                             " level of error", type=int, default=10)
 parser.add_argument("-fp", "--false_positive_per_origami", help="Number of false positive error that will be "
@@ -35,6 +35,8 @@ COPIES_OF_EACH_ORIGAMIES = args.copies_of_each_origami
 FALSE_POSITIVE_PER_ORIGAMI = args.false_positive_per_origami
 AVERAGE = args.average
 VERBOSE = args.verbose
+ROW_NUMBER = 8
+COLUMN_NUMBER = 10
 
 RESULT_DIRECTORY = "test_result"
 DATA_DIRECTORY = "test_data"
@@ -92,8 +94,8 @@ def degrade(dnam_object, file_in, file_out, number_of_error, average=False, fals
             random_index = random.choice(range(total_origami))
             if random_index not in false_positive_details:
                 false_positive_details[random_index] = 0
-            error_row = random.choice(range(6))
-            error_column = random.choice(range(8))
+            error_row = random.choice(range(ROW_NUMBER))
+            error_column = random.choice(range(COLUMN_NUMBER))
             if encode_file_list[random_index][error_row][error_column] == 1:
                 encode_file_list[random_index][error_row][error_column] = 0
                 total_error_inserted += 1
@@ -111,8 +113,8 @@ def degrade(dnam_object, file_in, file_out, number_of_error, average=False, fals
             if index not in false_positive_details:
                 false_positive_details[index] = 0
             while error_inserted < number_of_error:  # In error only 1 will be 0. 0 won't be 1
-                error_row = random.choice(range(6))
-                error_column = random.choice(range(8))
+                error_row = random.choice(range(ROW_NUMBER))
+                error_column = random.choice(range(COLUMN_NUMBER))
                 if encode_file_list[index][error_row][error_column] == 1:
                     encode_file_list[index][error_row][error_column] = 0
                     total_error_inserted += 1

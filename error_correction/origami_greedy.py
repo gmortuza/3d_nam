@@ -100,7 +100,10 @@ class Origami:
         orientation_bits = set([(1, 0), (1, 9), (6, 0), (6, 9)])
         index_bits = set([(2, 0), (3, 0), (4, 0)])
         data_index = data_index_orientation - orientation_bits
-        data_bits = data_index - index_bits
+        data_index = sorted(list(data_index))
+        data_bits = data_index[:data_bit_per_origami]
+        index_bits = data_index[data_bit_per_origami: ]
+        # data_bits = data_index - index_bits
 
         matrix_details = dict(
             data_bits=list(data_bits),
