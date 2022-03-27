@@ -195,20 +195,12 @@ for file_size in list(range(STARTING_FILE_SIZE, ENDING_FILE_SIZE, FILE_SIZE_GAP)
         logger.info("Degradation done")
         dnam_decode = ProcessFile(verbose=VERBOSE)
         # try to decode with different decoding parameter
-        for threshold_data in range(2, 5):  # This two loops are for the parameter.
-            for threshold_parity in range(2, 5):  # Now we are choosing only one parameter.
+        for threshold_data in range(2, 4):  # This two loops are for the parameter.
+            for threshold_parity in range(2, 4):  # Now we are choosing only one parameter.
                 decoded_file_name = test_file_name + "_decoded_copy_" + str(COPIES_OF_EACH_ORIGAMIES) + "_error_" + \
                                     str(error_in_each_origami) + "_scp_" + str(threshold_data) + \
                                     "_tempweight_" + str(threshold_parity)
                 start_time = time.time()
-                decoding_status, incorrect_origami, correct_origami, total_error_fixed, missing_origamies \
-                    = dnam_decode.decode(degraded_file_name, decoded_file_name, file_size,
-                                         threshold_data=threshold_data,
-                                         threshold_parity=threshold_parity,
-                                         maximum_number_of_error=MAXIMUM_NUMBER_OF_ERROR_CHECKED_PER_ORIGAMI,
-                                         false_positive=FALSE_POSITIVE_PER_ORIGAMI,
-                                         individual_origami_info=True,
-                                         correct_file=encoded_file_name)
                 try:
                     decoding_status, incorrect_origami, correct_origami, total_error_fixed, missing_origamies \
                         = dnam_decode.decode(degraded_file_name, decoded_file_name, file_size,

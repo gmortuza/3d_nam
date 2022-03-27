@@ -12,6 +12,9 @@ def get_logger(verbose=0, logger_name=__name__):
     :return: Logger
     """
     logger = logging.getLogger(logger_name)
+    if hasattr(logger, '_init'):
+        return logger
+    setattr(logger, '_init', True)
     stream_handler = logging.StreamHandler(sys.stdout)
     if verbose == 1:
         stream_handler.setLevel(logging.DEBUG)

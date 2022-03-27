@@ -709,14 +709,15 @@ if __name__ == "__main__":
     origami_object = Origami(2)
     encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0, 29))
 
-    encoded_file[1][0] = 0
-    encoded_file[3][2] = 0
-    encoded_file[0][6] = 0
-    encoded_file[7][7] = 0
+    # encoded_file[1][0] = 0
+    # encoded_file[2][2] = 0
+    # encoded_file[0][6] = 0
+    # encoded_file[7][5] = 0
 
-    encoded_file = (np.fliplr(encoded_file))
+    # encoded_file = (np.fliplr(encoded_file))
+    encoded_file = origami_object.data_stream_to_matrix('11101000001110111000100001010000100100010011100101010110001111010010110000001100')
 
-    decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file), 2, 2, 9, 10)
+    decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file), 4, 4, 3, 0)
 
     print(decoded_file)
     if not decoded_file == -1 and decoded_file['binary_data'] == bin_stream:

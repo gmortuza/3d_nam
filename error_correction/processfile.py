@@ -80,7 +80,7 @@ class ProcessFile(Origami):
         self.logger.info("Encoding done")
         return segment_size, data_bit
 
-    def single_origami_decode(self, single_origami, lock, ior_file_name, correct_dictionary, common_parity_index,
+    def single_origami_decode(self, single_origami, ior_file_name, correct_dictionary, common_parity_index,
                               minimum_temporary_weight, maximum_number_of_error, false_positive):
         current_time = time.time()
         self.logger.info("Working on origami(%d): %s", single_origami[0], single_origami[1])
@@ -174,20 +174,18 @@ class ProcessFile(Origami):
         # Decoded dictionary with number of occurrence of a single origami
         decoded_dictionary_wno = {}
         origami_data = [(i, single_origami.rstrip("\n")) for i, single_origami in enumerate(data)]
-        lock = multiprocessing.Manager().Lock()
-        lock = None
-        p_single_origami_decode = partial(self.single_origami_decode, lock=lock, ior_file_name=ior_file_name,
+        p_single_origami_decode = partial(self.single_origami_decode, ior_file_name=ior_file_name,
                                           correct_dictionary=
                                           correct_dictionary, common_parity_index=threshold_data,
                                           minimum_temporary_weight=threshold_parity,
                                           maximum_number_of_error=maximum_number_of_error,
                                           false_positive=false_positive)
-        return_value = map(p_single_origami_decode, origami_data)
-        # optimum_number_of_process = int(math.ceil(multiprocessing.cpu_count()))
-        # pool = multiprocessing.Pool(processes=optimum_number_of_process)
-        # return_value = pool.map(p_single_origami_decode, origami_data)
-        # pool.close()
-        # pool.join()
+        # return_value = map(p_single_origami_decode, origami_data)
+        optimum_number_of_process = int(math.ceil(multiprocessing.cpu_count()))
+        pool = multiprocessing.Pool(processes=optimum_number_of_process)
+        return_value = pool.map(p_single_origami_decode, origami_data)
+        pool.close()
+        pool.join()
         for decoded_matrix in return_value:
             if not decoded_matrix is None and not decoded_matrix[0] is None:
                 # Checking status
@@ -224,84 +222,6 @@ class ProcessFile(Origami):
         self.logger.info("Number of missing origami :" + str(missing_origami))
         self.logger.info("Total error fixed: " + str(total_error_fixed))
         self.logger.info("File recovery was successfull")
-        return 1, incorrect_origami, correct_origami, total_error_fixed, missing_origami
-
-
-
-
-
-
-        majority_vote_queue = {}
-        recovered_origami = set()
-        origami_list = set(list(range(total_origami_with_red)))
-        for index, single_index_origami in decoded_dictionary_wno.items():
-            if index >= total_origami_with_red:
-                # This origami doesn't exists. It's a garbage
-                continue
-            most_common = Counter(single_index_origami).most_common()
-            # Majority voting
-            # If a origami has same number of majority voting but different data then we will discard that
-            if len(most_common) >= 2 and most_common[0][1] == most_common[1][1]:
-                continue
-            # If a origami has single majority voting we will consider that as recovered
-            recovered_origami.add(index)
-            # Initially, we will start the fountain code decoding with origami having majority voting more than 2.
-            # Which ever origami have majority voting less 3, we will add them in the queue
-            # We we can not decode the file with majority voting 3 then we will keep using other origamies with lower
-            # majority voting
-            if most_common[0][1] >= 3:
-                decoded_dictionary[index] = most_common[0][0]
-            else:
-                if most_common[0][1] not in majority_vote_queue:
-                    # queue will have a key value pair of majoirty voting
-                    # { 'majority_vote' : 'origami_data' }
-                    majority_vote_queue[most_common[0][1]] = {}
-                majority_vote_queue[most_common[0][1]][index] = most_common[0][0]
-        # We will calculate the number of missing origami here
-        missing_origami = list(origami_list.difference(recovered_origami))
-        # Sorting the dictionary according to the index
-        decoded_elements = {}
-        current_data_map = {}
-        try:
-            # Initialize the fountain code decoding using the origami having majority vote of >= 3
-            decoded_elements, current_data_map = preprocess.decode(decoded_dictionary, segments, xored_map,
-                                                                   decoded_elements, current_data_map)
-            # we will keep adding element from the queue until the queue is empty or we recover the file
-            while not len(decoded_elements) == segments:
-                if len(majority_vote_queue) == 0:
-                    # If no more item in the queue then the file is not decodable
-                    self.logger.warning("Could not decode the file")
-                    self.logger.info("Number of missing origami: " + str(missing_origami))
-                    return -1, incorrect_origami, correct_origami, total_error_fixed, missing_origami
-                else:
-                    # get the first element from the majority vote queue
-                    # Add it with the current data map
-                    decoded_dictionary = majority_vote_queue[max(majority_vote_queue.keys())]
-                    del majority_vote_queue[max(majority_vote_queue.keys())]
-                decoded_elements, current_data_map = preprocess.decode(decoded_dictionary, segments, xored_map,
-                                                                       decoded_elements, current_data_map)
-        except Exception as e:
-            self.logger.warning("Couldn't decode the file")
-            self.logger.info("Number of missing origami: " + str(missing_origami))
-            self.logger.exception(e)
-            return -1, incorrect_origami, correct_origami, total_error_fixed, missing_origami
-        # Combine all the file segments
-        recovered_binary = "".join(str(decoded_elements[index]) for index in sorted(decoded_elements.keys()))
-        # remove partial padding
-        recovered_binary = recovered_binary[:8 * (len(recovered_binary) // 8)]
-        with open(file_out, "wb") as result_file:
-            for start_index in range(0, len(recovered_binary), 8):
-                bin_data = recovered_binary[start_index:start_index + 8]
-                # convert bin data into decimal
-                decimal = int(''.join(str(i) for i in bin_data), 2)
-                if decimal == 0 and start_index + 8 == len(
-                        recovered_binary):  # This will remove the padding. If the padding is whole byte.
-                    continue
-                decimal_byte = bytes([decimal])
-                result_file.write(decimal_byte)
-        self.logger.info("Number of missing origami :" + str(missing_origami))
-        self.logger.info("Total error fixed: " + str(total_error_fixed))
-        print("File recovery was successfull")
         return 1, incorrect_origami, correct_origami, total_error_fixed, missing_origami
 
 
