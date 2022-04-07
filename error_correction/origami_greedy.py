@@ -715,9 +715,9 @@ if __name__ == "__main__":
     # encoded_file[7][5] = 0
 
     # encoded_file = (np.fliplr(encoded_file))
-    encoded_file = origami_object.data_stream_to_matrix('11101000001110111000100001010000100100010011100101010110001111010010110000001100')
+    encoded_file = origami_object.data_stream_to_matrix('11011110001100101110101000110000011000110100001111011001101010001101100001001000')
 
-    decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file), 4, 4, 3, 0)
+    decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file), 2, 3, 5, 0)
 
     print(decoded_file)
     if not decoded_file == -1 and decoded_file['binary_data'] == bin_stream:

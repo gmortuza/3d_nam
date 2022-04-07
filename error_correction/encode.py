@@ -27,7 +27,7 @@ def main():
     :return: None
     """
     args = read_args()
-    dnam_object = ProcessFile(redundancy=args.redundancy, verbose=args.verbose, degree=args.degree)
+    dnam_object = ProcessFile(verbose=args.verbose)
     dnam_object.encode(os.path.abspath(args.file_in), os.path.abspath(args.file_out), args.formatted_output)
 
 

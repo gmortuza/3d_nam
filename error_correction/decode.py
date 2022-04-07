@@ -36,7 +36,7 @@ def read_args():
 
 def main():
     args = read_args()
-    dnam_decode = ProcessFile(redundancy=args.redundancy, verbose=args.verbose, degree=args.degree)
+    dnam_decode = ProcessFile(verbose=args.verbose)
     dnam_decode.decode(args.file_in, args.file_out, args.file_size,
                        threshold_data=args.threshold_data,
                        threshold_parity=args.threshold_parity,
