@@ -162,10 +162,15 @@ def get_mapping_point(mapping):
 
 
 def main():
+    highest_point = float('-inf')
     for _ in range(NUMBER_OF_RUN):
         mapping = get_mapping()
         mapping_point = get_mapping_point(mapping)
-        print(mapping_point)
+        if mapping_point > highest_point:
+            highest_point = mapping_point
+            best_mapping = mapping
+    print(f"Mapping point: --> {round(highest_point, 2)}")
+    print(f"Best mapping: {best_mapping}")
 
 
 def test_get_mirror_point():
