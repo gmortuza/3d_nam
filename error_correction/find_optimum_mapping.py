@@ -78,6 +78,7 @@ def get_data_bits():
                 data_bits.append((layer, row, column))
     return data_bits
 
+
 # we can not use the same data bits for a parity bit that is mirrored to the other parity bits.
 # This function will return the list of data bits that are not mirrored to the other parity bits
 def get_available_data_bits_for_a_parity_bit(parity_bit, data_bits, mapping):
@@ -88,6 +89,7 @@ def get_available_data_bits_for_a_parity_bit(parity_bit, data_bits, mapping):
         if mirror_point in mapping:
             data_bits.remove(set(mapping[mirror_point]))
     return data_bits
+
 
 # Get all the assigned data bits for a particular parity bit
 def get_assigned_points_for_parity(data_bit_counter: dict, available_data_bits: [tuple]) -> [tuple]:
@@ -100,7 +102,8 @@ def get_assigned_points_for_parity(data_bit_counter: dict, available_data_bits: 
             data_bit = available_data_bits_sorted[0]
         else:
             available_data_bits_list = list(available_data_bits)
-            available_data_bits_probability = [data_bit_counter[i] for i in available_data_bits_list]  # picking probability
+            available_data_bits_probability = [data_bit_counter[i] for i in
+                                               available_data_bits_list]  # picking probability
             data_bit = random.choices(available_data_bits_list, weights=available_data_bits_probability)[0]
         points.append(data_bit)
         # available_data_bits.remove(data_bit)
@@ -110,10 +113,11 @@ def get_assigned_points_for_parity(data_bit_counter: dict, available_data_bits: 
         available_data_bits = available_data_bits.difference(set(mirror_of_data_bit))
     return points
 
+
 # Track number of parity bit assigned to each data bit
 def update_counter(data_bit_counter: dict, assigned_data_bits: [tuple]) -> None:
     for data_bit in assigned_data_bits:
-        data_bit_counter[data_bit] += 1  # repalce inplace
+        data_bit_counter[data_bit] += 1  # replace inplace
 
 
 # Generate the mapping for parity bits
@@ -147,7 +151,8 @@ def get_distance_point_of_mapping(mapping):
         distances[parity_bit] = get_distance_multiple_point(parity_bit, data_bits)
     return distances
 
-# Get a point fro the mapping based on the distance of the parity bit and the assigned data bit
+
+# Get a point for the mapping based on the distance of the parity bit and the assigned data bit
 def get_mapping_point(mapping):
     mapping_point = 0
     distances = get_distance_point_of_mapping(mapping)
