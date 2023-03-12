@@ -7,6 +7,7 @@ parity bits + checksum bits = 80 bits
 Each parity bits will have XOR of 8 bits, so in total = 640 bits
 Each data bit will be present in 4 parity bits so in total = 4 * 160 = 640
 """
+import collections
 import random
 from collections import defaultdict
 
@@ -87,41 +88,18 @@ class Mapping:
             mirrored_points.extend(self.get_mirror_point([point], axis))
         return mirrored_points
 
-    # we can not use the same data bits for a parity bit that is mirrored to the other parity bits.
-    # This function will return the list of data bits that are not mirrored to the other parity bits
-    def get_available_data_bits_for_a_parity_bit(self, parity_bit, data_bits, mapping):
-        # A data bit should not be assigned to the same parity bit
-        data_bits = set(data_bits)
-        mirror_of_parity_bit = self.get_mirror_points_all_axis(parity_bit)
-        for mirror_point in mirror_of_parity_bit:
-            if mirror_point in mapping:
-                data_bits.remove(set(mapping[mirror_point]))
-        return data_bits
 
-    # Get all the assigned data bits for a particular parity bit
-    def get_assigned_points_for_parity(self, data_bit_counter: dict, available_data_bits: [tuple]) -> [tuple]:
-        points = []
-        # take a random data bit from the available data bits
-        for _ in range(self.parity_coverage):
-            if CHOOSE_PARITY_MAPPING_DETERMINISTICALLY:
-                available_data_bits_sorted = sorted(list(available_data_bits), key=lambda x: data_bit_counter[x],
-                                                    reverse=False)
-                data_bit = available_data_bits_sorted[0]
-            else:
-                available_data_bits_list = list(available_data_bits)
-                available_data_bits_probability = [data_bit_counter[i] for i in
-                                                   available_data_bits_list]  # picking probability
-                if sum(available_data_bits_probability) == 0:
-                    available_data_bits_probability = [1 / len(available_data_bits_probability)] * \
-                                                      len(available_data_bits_probability)
-                data_bit = random.choices(available_data_bits_list, weights=available_data_bits_probability)[0]
-            points.append(data_bit)
-            # available_data_bits.remove(data_bit)
-            # remove the mirror point of this data bits
-            mirror_of_data_bit = self.get_mirror_points_all_axis(data_bit)
-            # remove the mirror point of this data bits from the available data bits
-            available_data_bits = available_data_bits.difference(set(mirror_of_data_bit))
-        return points
+    def get_available_data_cells_for_parity_cell(self, parity_cell, parity_data_map, data_parity_map_by_level):
+        available_cells = set(data_parity_map_by_level[parity_cell[0]].keys())
+        mirror_of_parity_cell = self.get_mirror_points_all_axis(parity_cell)
+        for mirror_point in mirror_of_parity_cell:
+            available_cells = available_cells - set(parity_data_map.get(mirror_point, []))
+        return list(available_cells)
+
+    def get_random_data_cell_for_parity(self, parity_cell, parity_data_map, data_parity_map_by_level):
+        available_cells = self.get_available_data_cells_for_parity_cell(parity_cell, parity_data_map, data_parity_map_by_level)
+        sorted_data_cells = sorted(available_cells, key=lambda x: len(data_parity_map_by_level[x[0]][x]))
+        return sorted_data_cells[0]
 
     # Track number of parity bit assigned to each data bit
     @staticmethod
@@ -131,25 +109,26 @@ class Mapping:
             data_bit_counter[data_bit] += 1  # replace inplace
 
     # Generate the mapping for parity bits
-    def get_parity_mapping(self, parity_bits, rest_bits) -> dict:
-        # TODO: double check the mapping
-        # track number of parity that is assigned to each data bit
-        data_bit_counter = defaultdict(lambda: 0)
-        parity_bit_counter = defaultdict(int)
-        mapping = {}
-        # assign random PARITY_COVERAGE data bits to that parity bits
-        for parity_bit in parity_bits:  # get data bits for all parity bits
-            if parity_bit not in mapping:
-                available_data_bits = self.get_available_data_bits_for_a_parity_bit(parity_bit, rest_bits, mapping)
-                assigned_data_bits = self.get_assigned_points_for_parity(data_bit_counter, available_data_bits)
-                mapping[parity_bit] = assigned_data_bits
-                self.update_counter(data_bit_counter, assigned_data_bits)
-                # Populate the mirror parity bits
-                for axis in ['x', 'y', 'xy']:
-                    assigned_data_bits_mirrored = self.get_mirror_point(assigned_data_bits, axis)
-                    self.update_counter(data_bit_counter, assigned_data_bits_mirrored)
-                    mapping[self.get_mirror_point([parity_bit], axis)[0]] = assigned_data_bits_mirrored
-        return mapping
+    def get_parity_mapping(self, parity_cells, rest_cells) -> dict:
+        parity_data_map = {parity_bit: [] for parity_bit in parity_cells}
+        data_parity_map_by_level = defaultdict(dict)
+        for cell in rest_cells:
+            data_parity_map_by_level[cell[0]][cell] = []
+        total_parity_map = self.parity_coverage * len(parity_cells) // 4
+        for _ in range(total_parity_map):
+            # choose a random parity based on least frequency
+            # sort the parity based on frequency
+            parity_cells_sorted = sorted(parity_cells, key=lambda x: len(parity_data_map[x]), reverse=False)
+            parity_cell = parity_cells_sorted[0]
+            # get the available data bits for this parity
+            random_data_cell = self.get_random_data_cell_for_parity(parity_cell, parity_data_map, data_parity_map_by_level)
+            mirrored_parity_cell = self.get_mirror_points_all_axis(parity_cell)
+            mirrored_random_data_cell = self.get_mirror_points_all_axis(random_data_cell)
+            for parity_cell, random_data_cell in zip(mirrored_parity_cell, mirrored_random_data_cell):
+                parity_data_map[parity_cell].append(random_data_cell)
+                data_parity_map_by_level[parity_cell[0]][random_data_cell].append(parity_cell)
+        pass
+
 
     def get_checksum_mapping(self, checksum_cells, rest_cells) -> dict:
         # each of the checksum cell will have cell assigned to it
@@ -248,18 +227,14 @@ class Mapping:
         data_cells = available_cells
         data_cells.sort()
         return {
-            'parity_bits': parity_cells,
+            'parity_cells': parity_cells,
             'checksum_cells': checksum_cells,
-            'indexing_bits': indexing_cells,
-            'data_bits': data_cells,
-            'orientation_bits': orientation_cells,
+            'indexing_cells': indexing_cells,
+            'data_cells': data_cells,
+            'orientation_cells': orientation_cells,
             'all_but_parity': checksum_cells + indexing_cells + data_cells + orientation_cells,
             'all_but_parity_checksum': indexing_cells + data_cells + orientation_cells,
         }
-
-    def get_parity_checksum_cells(self, available_cells, total):
-        bits = []
-        # while total <
 
     # Get a point for the mapping based on the distance of the parity bit and the assigned data bit
     def get_mapping_point(self, mapping):
@@ -275,7 +250,7 @@ class Mapping:
         for _ in range(NUMBER_OF_RUN):
             cell_purpose = self.determine_cells_purpose()
             # get parity mapper
-            current_parity_mapping = self.get_parity_mapping(cell_purpose['parity_bits'],
+            current_parity_mapping = self.get_parity_mapping(cell_purpose['parity_cells'],
                                                              cell_purpose['all_but_parity'])
             # get checksum mapping
             current_checksum_mapping = self.get_checksum_mapping(cell_purpose['checksum_cells'],
@@ -289,22 +264,13 @@ class Mapping:
                 highest_point = total_mapping_point
                 best_checksum_mapping = current_checksum_mapping
                 best_parity_mapping = current_parity_mapping
-                best_bits_purpose = bits_purpose
+                best_cell_purpose = cell_purpose
         # combine the best mapping and the best bit purpose
-        return None
-
-    def test_get_mirror_point(self):
-        points = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
-        true_mirrored_points_x = [(0, 7, 0), (1, 6, 1), (2, 5, 2)]
-        true_mirrored_points_y = [(0, 0, 9), (1, 1, 8), (2, 2, 7)]
-        true_mirrored_points_xy = [(0, 7, 9), (1, 6, 8), (2, 5, 7)]
-        assert true_mirrored_points_x == self.get_mirror_point(points, 'x')
-        assert true_mirrored_points_y == self.get_mirror_point(points, 'y')
-        assert true_mirrored_points_xy == self.get_mirror_point(points, 'xy')
-
-    def test(self):
-        points = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
-        self.test_get_mirror_point()
+        return {
+            'parity_mapping': best_parity_mapping,
+            'checksum_mapping': best_checksum_mapping,
+            'cell_purpose': best_cell_purpose,
+        }
 
 
 if __name__ == '__main__':
