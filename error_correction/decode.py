@@ -29,6 +29,7 @@ def read_args():
 
     parser.add_argument("-cf", "--correct_file", help="Original encoded file. Helps to check the status automatically."
                         , type=str, default=False)
+    parser.add_argument('-p', '--parallelism', help='Use multiple process', action='store_true', default=False)
 
     args = parser.parse_args()
     return args
@@ -37,13 +38,10 @@ def read_args():
 def main():
     args = read_args()
     dnam_decode = ProcessFile(verbose=args.verbose)
-    dnam_decode.decode(args.file_in, args.file_out, args.file_size,
-                       threshold_data=args.threshold_data,
-                       threshold_parity=args.threshold_parity,
-                       maximum_number_of_error=args.error,
-                       false_positive=args.false_positive,
-                       individual_origami_info=args.individual_origami_info,
-                       correct_file=args.correct_file)
+    dnam_decode.decode(args.file_in, args.file_out, args.file_size, threshold_data=args.threshold_data,
+                       threshold_parity=args.threshold_parity, maximum_number_of_error=args.error,
+                       individual_origami_info=args.individual_origami_info, false_positive=args.false_positive,
+                       correct_file=args.correct_file, parallelism=args.parallelism)
 
 
 if __name__ == '__main__':

@@ -1,11 +1,14 @@
 import time
 from collections import Counter
 import multiprocessing
+from multiprocessing import set_start_method
 from functools import partial
 import math
 from log import get_logger
 from origami_greedy import Origami
 from origamiprepostprocess import OrigamiPrePostProcess
+
+set_start_method('fork')
 
 
 class ProcessFile(Origami):
@@ -136,7 +139,7 @@ class ProcessFile(Origami):
         return [decoded_matrix, status]
 
     def decode(self, file_in, file_out, file_size, threshold_data, threshold_parity, maximum_number_of_error,
-               individual_origami_info, false_positive, correct_file=False):
+               individual_origami_info, false_positive, correct_file=False, parallelism=False):
         correct_origami = 0
         incorrect_origami = 0
         total_error_fixed = 0
@@ -181,11 +184,14 @@ class ProcessFile(Origami):
                                           maximum_number_of_error=maximum_number_of_error,
                                           false_positive=false_positive)
         # return_value = map(p_single_origami_decode, origami_data)
-        optimum_number_of_process = int(math.ceil(multiprocessing.cpu_count()))
-        pool = multiprocessing.Pool(processes=optimum_number_of_process)
-        return_value = pool.map(p_single_origami_decode, origami_data)
-        pool.close()
-        pool.join()
+        if parallelism:
+            optimum_number_of_process = int(math.ceil(multiprocessing.cpu_count()))
+            pool = multiprocessing.Pool(processes=optimum_number_of_process)
+            return_value = pool.map(p_single_origami_decode, origami_data)
+            pool.close()
+            pool.join()
+        else:
+            return_value = map(p_single_origami_decode, origami_data)
         for decoded_matrix in return_value:
             if not decoded_matrix is None and not decoded_matrix[0] is None:
                 # Checking status

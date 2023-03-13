@@ -204,11 +204,9 @@ for file_size in list(range(STARTING_FILE_SIZE, ENDING_FILE_SIZE, FILE_SIZE_GAP)
                 try:
                     decoding_status, incorrect_origami, correct_origami, total_error_fixed, missing_origamies \
                         = dnam_decode.decode(degraded_file_name, decoded_file_name, file_size,
-                                             threshold_data=threshold_data,
-                                             threshold_parity=threshold_parity,
+                                             threshold_data=threshold_data, threshold_parity=threshold_parity,
                                              maximum_number_of_error=MAXIMUM_NUMBER_OF_ERROR_CHECKED_PER_ORIGAMI,
-                                             false_positive=FALSE_POSITIVE_PER_ORIGAMI,
-                                             individual_origami_info=True,
+                                             individual_origami_info=True, false_positive=FALSE_POSITIVE_PER_ORIGAMI,
                                              correct_file=encoded_file_name)
                     if os.path.exists(encoded_file_name) and os.path.exists(decoded_file_name) and filecmp.cmp(
                             test_file_name, decoded_file_name):
@@ -253,6 +251,6 @@ for file_size in list(range(STARTING_FILE_SIZE, ENDING_FILE_SIZE, FILE_SIZE_GAP)
                     os.remove(decoded_file_name)
                     pass
         del dnam_decode
-        if status == 1:  # if we can decode the file we will remove that. Otherwise keep it for future debug reference.
+        if status == 1:  # if we can decode the file we will remove that. Other wise keep it for future debug reference.
             os.remove(degraded_file_name)
     del dnam_object  # clearing up the memory
