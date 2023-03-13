@@ -28,6 +28,9 @@ class Origami:
             '2': 'Origami was flipped in vertical direction.',
             '3': 'Origami was flipped in both direction. '
         }
+        self.matrix_details, self.parity_bit_relation, self.checksum_bit_relation = \
+            self._matrix_details(config.data_bit_per_origami)
+        self.data_bit_to_parity_bit = self.get_data_bit_to_parity_bit(self.parity_bit_relation)
         self.logger = get_logger(config.verbose, __name__)
 
     @staticmethod
@@ -177,7 +180,7 @@ class Origami:
 
         return matrix
 
-    def _encode(self, binary_stream, index, data_bit_per_origami):
+    def _encode(self, binary_stream, index):
         """
         Handle the encoding. Most of the time handle xoring.
         :param binary_stream: Binary value of the data
@@ -187,10 +190,7 @@ class Origami:
         """
         # Create the initial matrix which will contain the word,index and binary bits for fixing orientation but no
         # error encoding. So the parity bits will have the initial value of -1
-        self.number_of_bit_per_origami = data_bit_per_origami
-        self.matrix_details, self.parity_bit_relation, self.checksum_bit_relation = \
-            self._matrix_details(data_bit_per_origami)
-        self.data_bit_to_parity_bit = Origami.get_data_bit_to_parity_bit(self.parity_bit_relation)
+
         encoded_matrix = self.create_initial_matrix_from_binary_stream(binary_stream, index)
 
         # Set the cell value in checksum bits. This has to be before the parity bit xoring. Cause the parity bit
@@ -203,17 +203,16 @@ class Origami:
         self.logger.info("Finish calculating the parity bits")
         return Origami.matrix_to_data_stream(encoded_matrix)
 
-    def encode(self, binary_stream, index, data_bit_per_origami):
+    def encode(self, binary_stream, index):
         """
         This method will not be called internally. This is added just for testing purpose
 
         :param binary_stream: Binary value of the data
         :param index: Index of the current matrix
-        :param data_bit_per_origami: Number of bits that will be encoded in each origami
         :return: Encoded matrix
         :return:
         """
-        return self._encode(binary_stream, index, data_bit_per_origami)
+        return self._encode(binary_stream, index)
 
     @staticmethod
     def get_data_bit_to_parity_bit(parity_bit_relation):
@@ -700,14 +699,17 @@ if __name__ == "__main__":
     config_ = Config('config.yaml')
     bin_stream = "00110110010101010110101011010"
     origami_object = Origami(config_)
-    encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0, 29))
+    encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0))
 
     encoded_file[1][0] = 0
     encoded_file[0][6] = 0
 
     encoded_file = np.flipud(np.fliplr(encoded_file))
 
-    decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
+    new_origami_object = Origami(config_)
+    decoded_file = new_origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
+
+    # decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
 
     print(decoded_file)
     if not decoded_file == -1 and decoded_file['binary_data'] == bin_stream:
