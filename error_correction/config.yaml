@@ -1,0 +1,17 @@
+# common parameters
+row: 8
+column: 10
+verbose: true
+
+# Encoding parameter
+redundancy: 50
+encode_formatted_output: True  # Will print the origami as matrix instead of single line
+
+
+# Decoding parameter
+save_ior: True # save individual origami information during decoding
+maximum_error_to_fix: 8
+correct_file: ''  # original encoded file. helps to check the status of the origami(decoded or not)
+use_multi_core: True
+parity_threshold: 2
+data_threshold: 2

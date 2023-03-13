@@ -17,14 +17,13 @@ class ProcessFile(Origami):
     the origami method to handle individual origami. This file will also call
     """
 
-    def __init__(self, verbose):
+    def __init__(self, config):
         """
         This will combine all the origami and reconstruct the file
         :param verbose:
         """
-        super().__init__(verbose=verbose)
-        self.verbose = verbose
-        self.logger = get_logger(verbose, __name__)
+        super().__init__(config)
+        self.logger = get_logger(config.verbose, __name__)
         # Will be updated later during checking number how much redundancy we will need
         self.number_of_bit_per_origami = 29
 
@@ -35,7 +34,7 @@ class ProcessFile(Origami):
         :param available_capacity:
         :return:
         """
-        total_capacity = self.row * self.column
+        total_capacity = self.config.row * self.config.column
         checksum_allocation = len(self.get_checksum_relation())
         parity_allocation = len(self.get_parity_relation())
         available_capacity = total_capacity - checksum_allocation - parity_allocation - 4
@@ -87,7 +86,7 @@ class ProcessFile(Origami):
                               minimum_temporary_weight, maximum_number_of_error, false_positive):
         current_time = time.time()
         self.logger.info("Working on origami(%d): %s", single_origami[0], single_origami[1])
-        if len(single_origami[1]) != self.row * self.column:
+        if len(single_origami[1]) != self.config.row * self.config.column:
             self.logger.warning("Data point is missing in the origami")
             return
         try:

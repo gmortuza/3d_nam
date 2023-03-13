@@ -13,12 +13,11 @@ class Origami:
     represented by a matrix. So the term matrix and origami is used interchangeably.
     """
 
-    def __init__(self, verbose=0):
+    def __init__(self, config):
         """
         :param verbose: is it running on debug mode or info mode
         """
-        self.row = 8
-        self.column = 10
+        self.config = config
         self.checksum_bit_per_origami = 4
         self.encoded_matrix = None
         self.recovered_matrix_info = []
@@ -29,7 +28,8 @@ class Origami:
             '2': 'Origami was flipped in vertical direction.',
             '3': 'Origami was flipped in both direction. '
         }
-        self.logger = get_logger(verbose, __name__)
+        self.logger = get_logger(config.verbose, __name__)
+
     @staticmethod
     def get_parity_relation():
         return {
@@ -86,7 +86,7 @@ class Origami:
 
     def _matrix_details(self, data_bit_per_origami: int) -> object:
         """
-        Returns the relationship of the matrix. Currently all the the relationship is hardcoded.
+        Returns the relationship of the matrix. Currently all the relationship is hardcoded.
         This method returns the following details:
             parity bits: 20 bits
             indexing bits: depends on the file size
@@ -130,7 +130,7 @@ class Origami:
         :return: data_matrix: Matrix with droplet data, index and orientation bits
         """
         binary_list = list(binary_stream)
-        data_matrix = np.full((self.row, self.column), -1)  # All the cell of the matrix will have initial value -1.
+        data_matrix = np.full((self.config.row, self.config.column), -1)  # All the cell of the matrix will have initial value -1.
 
         # Putting the data into matrix
         for i, bit_index in enumerate(self.matrix_details["data_bits"]):
@@ -283,7 +283,7 @@ class Origami:
         :param: data_stream: 48 bit of string
         :returns: matrix: return 2-D matrix
         """
-        matrix = np.full((self.row, self.column), -1)
+        matrix = np.full((self.config.row, self.config.column), -1)
         data_stream_index = 0
         for row in range(len(matrix)):
             for column in range(len(matrix.T)):
@@ -515,11 +515,11 @@ class Origami:
             if orientation_info == 0:
                 updated_locations.append(error_location)
             elif orientation_info == 1:
-                updated_locations.append((self.row - 1 - error_location[0], error_location[1]))
+                updated_locations.append((self.config.row - 1 - error_location[0], error_location[1]))
             elif orientation_info == 2:
-                updated_locations.append((error_location[0], self.column - 1 - error_location[1]))
+                updated_locations.append((error_location[0], self.config.column - 1 - error_location[1]))
             elif orientation_info == 3:
-                updated_locations.append((self.row - 1 - error_location[0], self.column - 1 - error_location[1]))
+                updated_locations.append((self.config.row - 1 - error_location[0], self.config.column - 1 - error_location[1]))
         return updated_locations
 
     def _extract_text_and_index(self, matrix):
@@ -679,9 +679,9 @@ class Origami:
             :param false_positive:
             :param maximum_number_of_error:
         """
-        # If length of decoded data is not 48 then show error
-        if len(data_stream) != self.row * self.column:
-            raise ValueError("The data stream length should be", self.row * self.column)
+        # If length of decoded data is not row * col then show error
+        if len(data_stream) != self.config.row * self.config.column:
+            raise ValueError("The data stream length should be", self.config.row * self.config.column)
         # Initial check which parity bit index gave error and which gave correct results
         # Converting the data stream to data array first
         data_matrix_for_decoding = self.data_stream_to_matrix(data_stream)
