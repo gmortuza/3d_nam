@@ -11,6 +11,8 @@ import collections
 import random
 from collections import defaultdict
 
+import numpy as np
+
 random.seed(0)
 
 # Default settings
@@ -23,7 +25,7 @@ LAYER_ASSIGNED_TO_PARITY_BITS = 1
 PARITY_COVERAGE = 8  # Each parity bit will have XOR of 8 data bits
 DATA_COVERAGE = 4  # Each data bit will be present in 4 parity bits
 NUMBER_OF_RUN = 100  # Number of runs to find the optimum mapping
-PARITY_PERCENT = .3
+PARITY_PERCENT = .35
 CHECK_SUM_PERCENT = .05
 TOTAL_INDEX_BITS = 4
 # If True, the data bits will be assigned deterministically, randomly otherwise
@@ -41,31 +43,27 @@ class Mapping:
 
         self.total_orientation_bits = 4
         self.total_bits = row * column * layer
-        self.total_parity_cells = int(self.total_bits * parity_percent)
-        self.total_checksum_cells = int(self.total_bits * check_sum_percent)
+
+        self.total_parity_cells = self.get_nearest_number_to_match_multiple(self.total_bits * parity_percent)
+        self.total_checksum_cells = self.get_nearest_number_to_match_multiple(self.total_bits * check_sum_percent)
         self.total_data_bits = self.total_bits - self.total_parity_cells - self.total_checksum_cells - \
                                self.total_index_bits - self.total_orientation_bits
+        self.check_input()
+        self.parity_coverage = 8
+
+    def get_nearest_number_to_match_multiple(self, number):
+        available_numbers = np.asarray(range(0, self.total_bits, self.layer * self.total_orientation_bits))
+        distances = np.abs(available_numbers - number)
+        argmin = np.argmin(distances)
+        return int(available_numbers[argmin])
+
+    def check_input(self):
         if self.total_data_bits <= 0:
             raise Exception("Invalid settings. Total data bits can not be negative. Reduce the parity percent or "
                             "check sum percent.")
+        if self.row % 2 != 0 or self.column % 2 != 0:
+            raise Exception("Invalid settings. Row and column must be even number to maintain mirror property.")
 
-        # TODO: calculate the parity coverage and data coverage
-        self.parity_coverage, self.data_coverage = self.calculate_parity_and_data_coverage()
-
-    def calculate_parity_and_data_coverage(self):
-        return PARITY_COVERAGE, DATA_COVERAGE
-
-    # measure euclidean distance between two points
-    @staticmethod
-    def get_distance(point1: tuple, point2: tuple) -> float:
-        return ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2 + (point1[2] - point2[2]) ** 2) ** 0.5
-
-    # Measure the distance between a point and a list of points
-    def get_distance_multiple_point(self, point: tuple, points: [tuple]) -> float:
-        distances = 0
-        for p in points:
-            distances += self.get_distance(point, p)
-        return distances / len(points)
 
     # The given points will be mirrored based on given axis
     def get_mirror_point(self, points: [tuple], axis='x') -> list:
@@ -127,8 +125,7 @@ class Mapping:
             for parity_cell, random_data_cell in zip(mirrored_parity_cell, mirrored_random_data_cell):
                 parity_data_map[parity_cell].append(random_data_cell)
                 data_parity_map_by_level[parity_cell[0]][random_data_cell].append(parity_cell)
-        pass
-
+        return parity_data_map
 
     def get_checksum_mapping(self, checksum_cells, rest_cells) -> dict:
         # each of the checksum cell will have cell assigned to it
@@ -236,13 +233,22 @@ class Mapping:
             'all_but_parity_checksum': indexing_cells + data_cells + orientation_cells,
         }
 
+    @staticmethod
+    def get_2d_std(points):
+        points = np.array(points)
+        x = points[:, 1]
+        y = points[:, 2]
+        x_std = np.abs(x - np.mean(x))
+        y_std = np.abs(y - np.mean(y))
+        combined = x_std + y_std
+        return sum(combined)
+
     # Get a point for the mapping based on the distance of the parity bit and the assigned data bit
     def get_mapping_point(self, mapping):
-        mapping_point = 0
-        distances = self.get_distance_point_of_mapping(mapping)
-        for parity_bit, distance in distances.items():
-            mapping_point += distance
-        return mapping_point / len(mapping.keys())
+        total_std = 0
+        for parity_bit, data_bits in mapping.items():
+            total_std += self.get_2d_std(data_bits)
+        return total_std / len(mapping.keys())
 
     def get_optimum_mapping(self):
         # define the purpose of each bit(parity, checksum, data, orientation, indexing)
@@ -275,4 +281,4 @@ class Mapping:
 
 if __name__ == '__main__':
     mapping_ = Mapping()
-    mapping_.get_optimum_mapping()
+    optimum_mapping = mapping_.get_optimum_mapping()
