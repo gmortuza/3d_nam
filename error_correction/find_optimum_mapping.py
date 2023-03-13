@@ -13,46 +13,30 @@ from collections import defaultdict
 
 import numpy as np
 
-random.seed(0)
+from error_correction.config import Config
 
-# Default settings
-# can be updated using function parameters
-ROW = 8
-COLUMN = 10
-LAYER = 3
-# Mapping settings
-LAYER_ASSIGNED_TO_PARITY_BITS = 1
-PARITY_COVERAGE = 8  # Each parity bit will have XOR of 8 data bits
-DATA_COVERAGE = 4  # Each data bit will be present in 4 parity bits
-NUMBER_OF_RUN = 100  # Number of runs to find the optimum mapping
-PARITY_PERCENT = .35
-CHECK_SUM_PERCENT = .05
-TOTAL_INDEX_BITS = 4
-# If True, the data bits will be assigned deterministically, randomly otherwise
-CHOOSE_PARITY_MAPPING_DETERMINISTICALLY = False
+random.seed(0)
 
 
 class Mapping:
 
-    def __init__(self, row=ROW, column=COLUMN, layer=LAYER, parity_percent=PARITY_PERCENT,
-                 check_sum_percent=CHECK_SUM_PERCENT, total_index_bits=TOTAL_INDEX_BITS):
-        self.row = row
-        self.column = column
-        self.layer = layer
-        self.total_index_bits = total_index_bits
+    def __init__(self, config):
+        self.config = config
 
-        self.total_orientation_bits = 4
-        self.total_bits = row * column * layer
+        self.total_orientation_bits = config.total_orientation_bit
+        self.total_bits = self.config.row * self.config.column * self.config.layer
 
-        self.total_parity_cells = self.get_nearest_number_to_match_multiple(self.total_bits * parity_percent)
-        self.total_checksum_cells = self.get_nearest_number_to_match_multiple(self.total_bits * check_sum_percent)
+        self.total_parity_cells = self.get_nearest_number_to_match_multiple(
+            self.total_bits * self.config.parity_percent)
+        self.total_checksum_cells = self.get_nearest_number_to_match_multiple(
+            self.total_bits * self.config.checksum_percent)
         self.total_data_bits = self.total_bits - self.total_parity_cells - self.total_checksum_cells - \
-                               self.total_index_bits - self.total_orientation_bits
+                               self.config.total_index_bit - self.config.total_orientation_bit
         self.check_input()
         self.parity_coverage = 8
 
     def get_nearest_number_to_match_multiple(self, number):
-        available_numbers = np.asarray(range(0, self.total_bits, self.layer * self.total_orientation_bits))
+        available_numbers = np.asarray(range(0, self.total_bits, self.config.layer * self.config.total_orientation_bit))
         distances = np.abs(available_numbers - number)
         argmin = np.argmin(distances)
         return int(available_numbers[argmin])
@@ -61,9 +45,8 @@ class Mapping:
         if self.total_data_bits <= 0:
             raise Exception("Invalid settings. Total data bits can not be negative. Reduce the parity percent or "
                             "check sum percent.")
-        if self.row % 2 != 0 or self.column % 2 != 0:
+        if self.config.row % 2 != 0 or self.config.column % 2 != 0:
             raise Exception("Invalid settings. Row and column must be even number to maintain mirror property.")
-
 
     # The given points will be mirrored based on given axis
     def get_mirror_point(self, points: [tuple], axis='x') -> list:
@@ -72,11 +55,11 @@ class Mapping:
             if axis is None:
                 mirrored_points.append(point)
             elif axis == 'x':
-                mirrored_points.append((point[0], self.row - 1 - point[1], point[2]))
+                mirrored_points.append((point[0], self.config.row - 1 - point[1], point[2]))
             elif axis == 'y':
-                mirrored_points.append((point[0], point[1], self.column - 1 - point[2]))
+                mirrored_points.append((point[0], point[1], self.config.column - 1 - point[2]))
             elif axis == 'xy':
-                mirrored_points.append((point[0], self.row - 1 - point[1], self.column - 1 - point[2]))
+                mirrored_points.append((point[0], self.config.row - 1 - point[1], self.config.column - 1 - point[2]))
         return mirrored_points
 
     # Given a point, return all the points that are mirrored on all the axis
@@ -86,7 +69,6 @@ class Mapping:
             mirrored_points.extend(self.get_mirror_point([point], axis))
         return mirrored_points
 
-
     def get_available_data_cells_for_parity_cell(self, parity_cell, parity_data_map, data_parity_map_by_level):
         available_cells = set(data_parity_map_by_level[parity_cell[0]].keys())
         mirror_of_parity_cell = self.get_mirror_points_all_axis(parity_cell)
@@ -95,7 +77,8 @@ class Mapping:
         return list(available_cells)
 
     def get_random_data_cell_for_parity(self, parity_cell, parity_data_map, data_parity_map_by_level):
-        available_cells = self.get_available_data_cells_for_parity_cell(parity_cell, parity_data_map, data_parity_map_by_level)
+        available_cells = self.get_available_data_cells_for_parity_cell(parity_cell, parity_data_map,
+                                                                        data_parity_map_by_level)
         sorted_data_cells = sorted(available_cells, key=lambda x: len(data_parity_map_by_level[x[0]][x]))
         return sorted_data_cells[0]
 
@@ -119,7 +102,8 @@ class Mapping:
             parity_cells_sorted = sorted(parity_cells, key=lambda x: len(parity_data_map[x]), reverse=False)
             parity_cell = parity_cells_sorted[0]
             # get the available data bits for this parity
-            random_data_cell = self.get_random_data_cell_for_parity(parity_cell, parity_data_map, data_parity_map_by_level)
+            random_data_cell = self.get_random_data_cell_for_parity(parity_cell, parity_data_map,
+                                                                    data_parity_map_by_level)
             mirrored_parity_cell = self.get_mirror_points_all_axis(parity_cell)
             mirrored_random_data_cell = self.get_mirror_points_all_axis(random_data_cell)
             for parity_cell, random_data_cell in zip(mirrored_parity_cell, mirrored_random_data_cell):
@@ -165,9 +149,9 @@ class Mapping:
 
     def get_all_cells(self):
         all_bits = []
-        for layer in range(self.layer):
-            for row in range(self.row):
-                for column in range(self.column):
+        for layer in range(self.config.layer):
+            for row in range(self.config.row):
+                for column in range(self.config.column):
                     all_bits.append((layer, row, column))
         return all_bits
 
@@ -176,12 +160,12 @@ class Mapping:
         for cell in available_cells:
             available_cells_by_layer[cell[0]].add(cell)
         # each level will have same amount of parity bits
-        number_of_cells_per_level = total_cells // self.layer
+        number_of_cells_per_level = total_cells // self.config.layer
         # draw a random cell from each level and assign it as a parity bit
         random_cells = []
         while len(random_cells) < total_cells:
             # randomize which layer to choose from
-            randomized_layer = list(range(self.layer))
+            randomized_layer = list(range(self.config.layer))
             random.shuffle(randomized_layer)
             for layer in randomized_layer:
                 if len(random_cells) >= total_cells:
@@ -202,8 +186,8 @@ class Mapping:
         # first determine the orientation bit
         # for now put four orientation bits hardcoded
         # first layer four corners
-        orientation_cells = [(0, 0, 0), (0, 0, self.column - 1), (0, self.row - 1, 0),
-                             (0, self.row - 1, self.column - 1)]
+        orientation_cells = [(0, 0, 0), (0, 0, self.config.column - 1), (0, self.config.row - 1, 0),
+                             (0, self.config.row - 1, self.config.column - 1)]
         # remove the orientation bits from the available bits
         available_cells = list(set(available_cells).difference(set(orientation_cells)))
         # get the parity bits
@@ -215,7 +199,8 @@ class Mapping:
         # remove the checksum bits from the available bits
         available_cells = list(set(available_cells).difference(set(checksum_cells)))
         # get the indexing bits
-        indexing_cells = self.get_random_cells_evenly_distributed_by_levels(available_cells, self.total_index_bits)
+        indexing_cells = self.get_random_cells_evenly_distributed_by_levels(available_cells,
+                                                                            self.config.total_index_bit)
         # indexing, orientation, data will follow a particular order
         indexing_cells.sort()
         # remove the indexing bits from the available bits
@@ -253,7 +238,7 @@ class Mapping:
     def get_optimum_mapping(self):
         # define the purpose of each bit(parity, checksum, data, orientation, indexing)
         highest_point = float('-inf')
-        for _ in range(NUMBER_OF_RUN):
+        for _ in range(self.config.number_of_run):
             cell_purpose = self.determine_cells_purpose()
             # get parity mapper
             current_parity_mapping = self.get_parity_mapping(cell_purpose['parity_cells'],
@@ -280,5 +265,7 @@ class Mapping:
 
 
 if __name__ == '__main__':
-    mapping_ = Mapping()
+    config_ = Config("config.yaml")
+    mapping_ = Mapping(config_)
     optimum_mapping = mapping_.get_optimum_mapping()
+    print(optimum_mapping)
