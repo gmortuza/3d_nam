@@ -12,6 +12,8 @@ encode_formatted_output: True  # Will print the origami as matrix instead of sin
 save_ior: True # save individual origami information during decoding
 maximum_error_to_fix: 8
 correct_file: ''  # original encoded file. helps to check the status of the origami(decoded or not)
-use_multi_core: True
+write_individual_origami_info: True
+use_multi_core: False
 parity_threshold: 2
 data_threshold: 2
+check_for_false_positive: 0

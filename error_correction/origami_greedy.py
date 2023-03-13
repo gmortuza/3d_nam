@@ -371,8 +371,7 @@ class Origami:
         correct_indexes, incorrect_indexes = self._find_possible_error_location(matrix)
         return len(incorrect_indexes) == 0
 
-    def _decode(self, matrix, threshold_parity, threshold_data,
-                maximum_number_of_error, false_positive):
+    def _decode(self, matrix):
         """
         :param matrix: Matrix that will be decoded
         :param threshold_parity: Threshold value of parity cell to be considered as error
@@ -386,8 +385,7 @@ class Origami:
         # Will check the matrix weight first.
         # If matrix weight is zero that means all the parity matched
         # We will reduce this matrix weight by a greedy approach
-        _, matrix_weight, probable_error = self._get_matrix_weight(matrix, [], threshold_parity,
-                                                                   threshold_data, false_positive)
+        _, matrix_weight, probable_error = self._get_matrix_weight(matrix, [])
         if matrix_weight == 0:
             # All parity matched now we will check orientation and checksum
             self.logger.info("No parity mismatch found at the first step")
@@ -401,8 +399,7 @@ class Origami:
             matrix_details[tuple(single_error)] = {}
             changed_matrix, matrix_details[tuple(single_error)]["error_value"], \
             matrix_details[tuple(single_error)]["probable_error"] = \
-                self._get_matrix_weight(matrix, [single_error], threshold_parity, threshold_data,
-                                        false_positive)
+                self._get_matrix_weight(matrix, [single_error])
             # If after altering one bit only matrix_weight becomes zero then we will check checksum and parity
             if matrix_details[tuple(single_error)]["error_value"] == 0:
                 self.logger.info("After altering one bit, all the parity matched")
@@ -419,7 +416,7 @@ class Origami:
             # This queue will contains which cell to alter next
             queue_for_single_error = {}
             # we will not check more than the maximum number of error
-            while len(error_combination_checked_so_far) < maximum_number_of_error and len(
+            while len(error_combination_checked_so_far) < self.config.maximum_error_to_fix and len(
                     errors_that_will_be_checked) >= 1:
                 # Contains all the matrix weights. Which will be sorted to choose next bit flip
                 matrix_weights = {}
@@ -428,10 +425,7 @@ class Origami:
                     # Find matrix error after altering will_check_now
                     changed_matrix, single_probable_matrix_weight, single_probable_error = self._get_matrix_weight(
                         matrix,
-                        will_check_now,  # Alter this one
-                        threshold_parity,
-                        threshold_data,
-                        false_positive)
+                        will_check_now)  # Alter this one
 
                     if single_probable_matrix_weight == 0:
                         single_recovered_matrix = self.return_matrix(changed_matrix, will_check_now)
@@ -466,7 +460,7 @@ class Origami:
                     errors_that_will_be_checked = set(queue_for_single_error[i]).difference(
                         set(error_combination_checked_so_far))
                     del queue_for_single_error[i]
-                    if len(error_combination_checked_so_far) < maximum_number_of_error:
+                    if len(error_combination_checked_so_far) < self.config.maximum_error_to_fix:
                         break
                     else:
                         continue
@@ -543,8 +537,7 @@ class Origami:
 
         return index_decimal, text_bin_data
 
-    def _get_matrix_weight(self, matrix, changing_location, threshold_parity, threshold_data,
-                           false_positive):
+    def _get_matrix_weight(self, matrix, changing_location):
         """
         Matrix weight indicates how much error does this individual matrix contains.
         More the matrix error is more error this matrix contains.
@@ -622,12 +615,12 @@ class Origami:
         # Putting temporary weight on each parity indexes.
         # The default temporary weight will be number of occurrence of the parity bit from the data bit
         # The temporary weight will add 10 more if the specific parity bit didn't match in the first place.
-        if false_positive:
-            max_false_positive_in_parity = false_positive // 2
-            if false_positive % 2 == 0:
-                max_false_positive_in_data = false_positive // 2
+        if self.config.check_for_false_positive:
+            max_false_positive_in_parity = self.config.check_for_false_positive // 2
+            if self.config.check_for_false_positive % 2 == 0:
+                max_false_positive_in_data = self.config.check_for_false_positive // 2
             else:
-                max_false_positive_in_data = false_positive // 2 + 1
+                max_false_positive_in_data = self.config.check_for_false_positive // 2 + 1
         else:
             max_false_positive_in_parity = 0
             max_false_positive_in_data = 0
@@ -638,7 +631,7 @@ class Origami:
         # Will also check how many false positive we are adding
         for item in probable_parity_error_all:
             temp_weight = item[1]
-            if temp_weight >= threshold_parity:
+            if temp_weight >= self.config.parity_threshold:
                 if matrix_copy[item[0][0]][item[0][1]] == 0:
                     probable_parity_error.append(item[0])
                 elif max_false_positive_in_parity > false_positive_added_in_parity:
@@ -650,7 +643,7 @@ class Origami:
         probable_error = []
         # Sum the probability of error for each cell for data bit
         for key in sorted(probable_data_error.keys(), reverse=True):
-            if key >= threshold_data:
+            if key >= self.config.data_threshold:
                 for i in probable_data_error[key]:
                     if matrix_copy[i[0]][i[1]] == 0:
                         probable_error.append(i)
@@ -662,8 +655,7 @@ class Origami:
 
         return matrix_copy, matrix_weight / len(parity_bit_indexes_correct), probable_error_data_parity
 
-    def decode(self, data_stream, threshold_data, threshold_parity,
-               maximum_number_of_error, false_positive):
+    def decode(self, data_stream):
         """
         Decode the given data stream into word and their respective index
 
@@ -685,8 +677,7 @@ class Origami:
         # Initial check which parity bit index gave error and which gave correct results
         # Converting the data stream to data array first
         data_matrix_for_decoding = self.data_stream_to_matrix(data_stream)
-        return self._decode(data_matrix_for_decoding, threshold_data,
-                            threshold_parity, maximum_number_of_error, false_positive)
+        return self._decode(data_matrix_for_decoding)
 
         #   After fixing orientation we need to check the checksum bit.
         #   If we check before orientation fixed then it will not work
@@ -705,19 +696,18 @@ class Origami:
 
 # This is only for debugging purpose
 if __name__ == "__main__":
+    from config import Config
+    config_ = Config('config.yaml')
     bin_stream = "00110110010101010110101011010"
-    origami_object = Origami(2)
+    origami_object = Origami(config_)
     encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0, 29))
 
-    # encoded_file[1][0] = 0
-    # encoded_file[2][2] = 0
-    # encoded_file[0][6] = 0
-    # encoded_file[7][5] = 0
+    encoded_file[1][0] = 0
+    encoded_file[0][6] = 0
 
-    # encoded_file = (np.fliplr(encoded_file))
-    encoded_file = origami_object.data_stream_to_matrix('11011110001100101110101000110000011000110100001111011001101010001101100001001000')
+    encoded_file = np.flipud(np.fliplr(encoded_file))
 
-    decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file), 2, 3, 5, 0)
+    decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
 
     print(decoded_file)
     if not decoded_file == -1 and decoded_file['binary_data'] == bin_stream:
