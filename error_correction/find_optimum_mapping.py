@@ -13,7 +13,6 @@ from collections import defaultdict
 
 import numpy as np
 
-from error_correction.config import Config
 
 random.seed(0)
 
@@ -265,6 +264,8 @@ class Mapping:
 
 
 if __name__ == '__main__':
+    from error_correction.config import Config
+
     config_ = Config("config.yaml")
     mapping_ = Mapping(config_)
     optimum_mapping = mapping_.get_optimum_mapping()

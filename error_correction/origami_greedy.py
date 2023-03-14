@@ -5,6 +5,8 @@ import numpy as np
 import logging
 from log import get_logger
 
+from find_optimum_mapping import Mapping
+
 
 class Origami:
     """
@@ -28,9 +30,9 @@ class Origami:
             '2': 'Origami was flipped in vertical direction.',
             '3': 'Origami was flipped in both direction. '
         }
-        self.matrix_details, self.parity_bit_relation, self.checksum_bit_relation = \
-            self._matrix_details(config.data_bit_per_origami)
-        self.data_bit_to_parity_bit = self.get_data_bit_to_parity_bit(self.parity_bit_relation)
+        # self.matrix_details, self.parity_bit_relation, self.checksum_bit_relation = \
+        #     self._matrix_details(config.data_bit_per_origami)
+        # self.data_bit_to_parity_bit = self.get_data_bit_to_parity_bit(self.parity_bit_relation)
         self.logger = get_logger(config.verbose, __name__)
 
     @staticmethod
@@ -103,6 +105,9 @@ class Origami:
                  checksum_bit_relation: Checksum bit mapping
 
         """
+        mapping_details = Mapping(self.config).get_optimum_mapping()
+
+
         parity_bit_relation = self.get_parity_relation()
         checksum_bit_relation = self.get_checksum_relation()
 
@@ -133,30 +138,33 @@ class Origami:
         :return: data_matrix: Matrix with droplet data, index and orientation bits
         """
         binary_list = list(binary_stream)
-        data_matrix = np.full((self.config.row, self.config.column), -1)  # All the cell of the matrix will have initial value -1.
+        data_matrix = np.full((self.config.layer, self.config.row, self.config.column), -1)  # All the cell of the matrix will have initial value -1.
+
+        # split binary_list based on origami level
+        splitter = np.cumsum(np.asarray([0] + [self.config.data_cells_per_level[i] for i in range(self.config.layer)]))
 
         # Putting the data into matrix
-        for i, bit_index in enumerate(self.matrix_details["data_bits"]):
-            data_matrix[bit_index[0]][bit_index[1]] = binary_list[i]
+        for i, bit_index in enumerate(self.config.cell_purpose['data_cells']):
+            data_matrix[bit_index[0]][bit_index[1]][bit_index[2]] = binary_list[i]
 
         # Putting orientation data
-        for i, bit_index in enumerate(self.matrix_details["orientation_bits"]):
-            data_matrix[bit_index[0]][bit_index[1]] = self.matrix_details['orientation_data'][i]
+        for i, bit_index in enumerate(self.config.cell_purpose['orientation_cells']):
+            data_matrix[bit_index[0]][bit_index[1]][bit_index[2]] = self.config.orientation_data[i]
 
         # Putting indexing bits.
         # Checking if current index is more than supported.
-        if index >= 2 ** len(self.matrix_details["indexing_bits"]):
+        if index >= 2 ** len(self.config.cell_purpose['indexing_cells']):
             self.logger.error(
                 'Maximum support index is {maximum_input}. But given index is {index}'.format(
-                    maximum_input=2 ** len(self.matrix_details["indexing_bits"]),
+                    maximum_input=2 ** len(self.config.matrix_details["indexing_cells"]),
                     index=index
                 ))
             raise ValueError("Maximum support of index exceed")
-        index_len = '0' + str(len(self.matrix_details["indexing_bits"])) + 'b'
+        index_len = '0' + str(len(self.config.cell_purpose['indexing_cells'])) + 'b'
         index_bin = list(format(index, index_len))
         # Set the indexing
-        for i, bit_index in enumerate(self.matrix_details["indexing_bits"]):
-            data_matrix[bit_index[0]][bit_index[1]] = index_bin[i]
+        for i, bit_index in enumerate(self.config.cell_purpose['indexing_cells']):
+            data_matrix[bit_index[0]][bit_index[1]][bit_index[2]] = index_bin[i]
 
         self.logger.info("Droplet data and index has been inserted")
         return data_matrix
@@ -171,16 +179,16 @@ class Origami:
         """
         for single_xor_relation in relation:
             # Getting the all the data bits related to a specific parity bit
-            data_bits_value = [int(matrix[a[0]][a[1]]) for a in
+            data_bits_value = [int(matrix[a[0]][a[1]][a[2]]) for a in
                                relation[single_xor_relation]]
             # XORing all the data bits
             xored_value = reduce(lambda i, j: int(i) ^ int(j), data_bits_value)
             # Update the parity bit with the XORed value
-            matrix[single_xor_relation[0]][single_xor_relation[1]] = int(xored_value)
+            matrix[single_xor_relation[0]][single_xor_relation[1]][single_xor_relation[2]] = int(xored_value)
 
         return matrix
 
-    def _encode(self, binary_stream, index):
+    def encode(self, binary_stream, index):
         """
         Handle the encoding. Most of the time handle xoring.
         :param binary_stream: Binary value of the data
@@ -190,29 +198,19 @@ class Origami:
         """
         # Create the initial matrix which will contain the word,index and binary bits for fixing orientation but no
         # error encoding. So the parity bits will have the initial value of -1
+        binary_stream = binary_stream.ljust(self.config.data_cells_per_origami, '0')
 
         encoded_matrix = self.create_initial_matrix_from_binary_stream(binary_stream, index)
 
         # Set the cell value in checksum bits. This has to be before the parity bit xoring. Cause the parity bit
         # contains the checksum bits. And the default value of the checksum bit is -1. So if the parity xor happens
         # before checksum xor then some of the parity bit will have value negative. as that would be xor with -1
-        encoded_matrix = Origami._xor_matrix(encoded_matrix, self.checksum_bit_relation)
+        encoded_matrix = Origami._xor_matrix(encoded_matrix, self.config.checksum_mapping)
         self.logger.info("Finish calculating the checksum")
         # XOR for the parity code
-        encoded_matrix = Origami._xor_matrix(encoded_matrix, self.parity_bit_relation)
+        encoded_matrix = Origami._xor_matrix(encoded_matrix, self.config.parity_mapping)
         self.logger.info("Finish calculating the parity bits")
-        return Origami.matrix_to_data_stream(encoded_matrix)
-
-    def encode(self, binary_stream, index):
-        """
-        This method will not be called internally. This is added just for testing purpose
-
-        :param binary_stream: Binary value of the data
-        :param index: Index of the current matrix
-        :return: Encoded matrix
-        :return:
-        """
-        return self._encode(binary_stream, index)
+        return self.matrix_to_data_stream(encoded_matrix)
 
     @staticmethod
     def get_data_bit_to_parity_bit(parity_bit_relation):
@@ -238,29 +236,32 @@ class Origami:
         """
         self.print_matrix(self.encoded_matrix)
 
-    @staticmethod
-    def print_matrix(matrix, in_file=False):
+    def print_matrix(self, matrix, in_file=False):
         """
         Display a given matrix
 
-        :param: matrix: A 2-D matrix
+        :param: matrix: A 3-D matrix
         :param: in_file: if we want to save the encoding information in a file.
 
         :returns: None
         """
-        for row in range(len(matrix)):
-            for column in range(len(matrix.T)):
-                if not in_file:
-                    print(matrix[row][column], end="\t")
-                else:
-                    print(matrix[row][column], end="\t", file=in_file)
+        for layer in range(self.config.layer):
             if not in_file:
-                print("")
+                print("Layer: ", layer, end="\n")
             else:
-                print("", file=in_file)
+                print("Layer: ", layer, end="\n", file=in_file)
+            for row in range(self.config.row):
+                for column in range(self.config.column):
+                    if not in_file:
+                        print(matrix[layer][row][column], end="\t")
+                    else:
+                        print(matrix[layer][row][column], end="\t", file=in_file)
+                if not in_file:
+                    print("")
+                else:
+                    print("", file=in_file)
 
-    @staticmethod
-    def matrix_to_data_stream(matrix):
+    def matrix_to_data_stream(self, matrix):
         """
         Convert 2-D matrix to string
 
@@ -268,26 +269,28 @@ class Origami:
         :returns: data_stream: string of 2-D matrix
         """
         data_stream = []
-        for row in range(len(matrix)):
-            for column in range(len(matrix.T)):
-                data_stream.append(matrix[row][column])
+        for level in range(self.config.layer):
+            for row in range(self.config.row):
+                for column in range(self.config.column):
+                    data_stream.append(matrix[level][row][column])
         return ''.join(str(i) for i in data_stream)
 
     def data_stream_to_matrix(self, data_stream):
         """
-        Convert a sting to 2-D matrix
+        Convert a sting to 3-D matrix
 
         The length of data stream should be 48 bit currently this algorithm is only working with 6x8 matrix
 
         :param: data_stream: 48 bit of string
-        :returns: matrix: return 2-D matrix
+        :returns: matrix: return 3-D matrix
         """
-        matrix = np.full((self.config.row, self.config.column), -1)
+        matrix = np.full((self.config.layer, self.config.row, self.config.column), -1)
         data_stream_index = 0
-        for row in range(len(matrix)):
-            for column in range(len(matrix.T)):
-                matrix[row][column] = data_stream[data_stream_index]
-                data_stream_index += 1
+        for layer in range(self.config.layer):
+            for row in range(self.config.row):
+                for column in range(self.config.column):
+                    matrix[layer][row][column] = data_stream[data_stream_index]
+                    data_stream_index += 1
         return matrix
 
     def _fix_orientation(self, matrix, option=0):
@@ -695,24 +698,25 @@ class Origami:
 
 # This is only for debugging purpose
 if __name__ == "__main__":
-    from config import Config
-    config_ = Config('config.yaml')
-    bin_stream = "00110110010101010110101011010"
-    origami_object = Origami(config_)
-    encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0))
-
-    encoded_file[1][0] = 0
-    encoded_file[0][6] = 0
-
-    encoded_file = np.flipud(np.fliplr(encoded_file))
-
-    new_origami_object = Origami(config_)
-    decoded_file = new_origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
-
-    # decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
-
-    print(decoded_file)
-    if not decoded_file == -1 and decoded_file['binary_data'] == bin_stream:
-        print("Decoded successfully")
-    else:
-        print("wasn't decoded successfully")
+    pass
+    # from config import Config
+    # config_ = Config('config.yaml')
+    # bin_stream = "00110110010101010110101011010"
+    # origami_object = Origami(config_)
+    # encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0))
+    #
+    # encoded_file[1][0] = 0
+    # encoded_file[0][6] = 0
+    #
+    # encoded_file = np.flipud(np.fliplr(encoded_file))
+    #
+    # new_origami_object = Origami(config_)
+    # decoded_file = new_origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
+    #
+    # # decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
+    #
+    # print(decoded_file)
+    # if not decoded_file == -1 and decoded_file['binary_data'] == bin_stream:
+    #     print("Decoded successfully")
+    # else:
+    #     print("wasn't decoded successfully")

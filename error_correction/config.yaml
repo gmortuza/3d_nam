@@ -1,7 +1,7 @@
 # common parameters
 row: 8
 column: 10
-layer: 1
+layer: 2
 verbose: true
 
 # Mapping
@@ -17,7 +17,7 @@ number_of_run: 100
 redundancy: 50
 encode_formatted_output: True  # Will print the origami as matrix instead of single line
 # TODO: auto calculate the data_bit_per_origami
-data_bit_per_origami: 29
+#data_bit_per_origami: 29
 
 
 # Decoding parameter
