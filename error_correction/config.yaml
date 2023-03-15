@@ -15,7 +15,7 @@ number_of_run: 100
 
 # Encoding parameter
 redundancy: 50
-encode_formatted_output: True  # Will print the origami as matrix instead of single line
+encode_formatted_output: False  # Will print the origami as matrix instead of single line
 # TODO: auto calculate the data_bit_per_origami
 #data_bit_per_origami: 29
 

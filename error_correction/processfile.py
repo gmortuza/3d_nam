@@ -168,7 +168,7 @@ class ProcessFile(Origami):
         if self.config.correct_file:
             with open(self.config.correct_file) as cf:
                 for so in cf:
-                    ci, cd = self._extract_text_and_index(self.data_stream_to_matrix(so.rstrip("\n")))
+                    ci, cd = self.extract_text_and_index(self.data_stream_to_matrix(so.rstrip("\n")))
                     correct_dictionary[ci] = cd
         # Decoded dictionary with number of occurrence of a single origami
         decoded_dictionary_wno = {}

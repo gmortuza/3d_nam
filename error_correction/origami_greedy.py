@@ -35,101 +35,6 @@ class Origami:
         # self.data_bit_to_parity_bit = self.get_data_bit_to_parity_bit(self.parity_bit_relation)
         self.logger = get_logger(config.verbose, __name__)
 
-    @staticmethod
-    def get_parity_relation():
-        return {
-            (1, 1): [(0, 0), (0, 5), (3, 4), (7, 8)],
-            (1, 2): [(0, 7), (3, 9), (3, 3), (5, 0)],
-            (1, 3): [(0, 3), (1, 0), (4, 4), (0, 9)],
-            (1, 4): [(0, 3), (3, 3), (4, 9), (7, 5)],
-            (1, 5): [(0, 6), (3, 6), (4, 0), (7, 4)],
-            (1, 6): [(0, 0), (0, 6), (1, 9), (4, 5)],
-            (1, 7): [(0, 2), (3, 0), (3, 6), (5, 9)],
-            (1, 8): [(0, 4), (0, 9), (3, 5), (7, 1)],
-            (2, 1): [(0, 1), (0, 7), (3, 0), (6, 0)],
-            (2, 2): [(0, 6), (2, 9), (7, 0), (7, 4)],
-            (2, 3): [(1, 9), (4, 5), (7, 1), (7, 9)],
-            (2, 4): [(0, 8), (2, 0), (6, 9), (7, 2)],
-            (2, 5): [(0, 1), (2, 9), (6, 0), (7, 7)],
-            (2, 6): [(1, 0), (4, 4), (7, 0), (7, 8)],
-            (2, 7): [(0, 3), (2, 0), (7, 5), (7, 9)],
-            (2, 8): [(0, 2), (0, 8), (3, 9), (6, 9)],
-            (3, 1): [(3, 5), (4, 0), (4, 6), (7, 6)],
-            (3, 2): [(0, 4), (4, 3), (5, 0), (7, 7)],
-            (3, 7): [(0, 5), (4, 6), (5, 9), (7, 2)],
-            (3, 8): [(3, 4), (4, 3), (4, 9), (7, 3)],
-            (4, 1): [(0, 6), (3, 0), (3, 6), (4, 5)],
-            (4, 2): [(0, 7), (2, 0), (3, 3), (7, 4)],
-            (4, 7): [(0, 2), (2, 9), (3, 6), (7, 5)],
-            (4, 8): [(0, 3), (3, 3), (3, 9), (4, 4)],
-            (5, 1): [(1, 0), (4, 0), (7, 1), (7, 7)],
-            (5, 2): [(0, 0), (0, 4), (5, 9), (7, 6)],
-            (5, 3): [(0, 1), (0, 9), (3, 5), (6, 9)],
-            (5, 4): [(0, 2), (1, 9), (5, 0), (7, 8)],
-            (5, 5): [(0, 7), (1, 0), (5, 9), (7, 1)],
-            (5, 6): [(0, 0), (0, 8), (3, 4), (6, 0)],
-            (5, 7): [(0, 5), (0, 9), (5, 0), (7, 3)],
-            (5, 8): [(1, 9), (4, 9), (7, 2), (7, 8)],
-            (6, 1): [(0, 8), (4, 4), (7, 0), (7, 5)],
-            (6, 2): [(2, 0), (4, 3), (4, 9), (7, 7)],
-            (6, 3): [(3, 4), (6, 0), (7, 3), (7, 9)],
-            (6, 4): [(0, 5), (3, 9), (4, 3), (7, 3)],
-            (6, 5): [(0, 4), (3, 0), (4, 6), (7, 6)],
-            (6, 6): [(3, 5), (6, 9), (7, 0), (7, 6)],
-            (6, 7): [(2, 9), (4, 0), (4, 6), (7, 2)],
-            (6, 8): [(0, 1), (4, 5), (7, 4), (7, 9)],
-        }
-
-    @staticmethod
-    def get_checksum_relation():
-        return {
-            (3, 4): [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (1, 0), (2, 0), (3, 0), (3, 3)],
-            (3, 5): [(0, 5), (0, 6), (0, 7), (0, 8), (0, 9), (1, 9), (2, 9), (3, 9), (3, 6)],
-            (4, 4): [(4, 0), (5, 0), (6, 0), (7, 0), (7, 1), (7, 2), (7, 3), (7, 4), (4, 3)],
-            (4, 5): [(7, 5), (7, 6), (7, 7), (7, 8), (7, 9), (6, 9), (5, 9), (4, 9), (4, 6)]
-        }
-
-    def _matrix_details(self, data_bit_per_origami: int) -> object:
-        """
-        Returns the relationship of the matrix. Currently all the relationship is hardcoded.
-        This method returns the following details:
-            parity bits: 20 bits
-            indexing bits: depends on the file size
-            orientation bits: 4 bits
-            checksum bits: 4 bits
-            data bits: 48 - indexing bits
-        :rtype: object
-        :param data_bit_per_origami: Number of bits that will be encoded in each origami
-        :returns matrix_details -> Label for each cell
-                 parity_bit_relation: Parity bit mapping
-                 checksum_bit_relation: Checksum bit mapping
-
-        """
-        mapping_details = Mapping(self.config).get_optimum_mapping()
-
-
-        parity_bit_relation = self.get_parity_relation()
-        checksum_bit_relation = self.get_checksum_relation()
-
-        data_index_orientation = set([i for v in checksum_bit_relation.values() for i in v])
-        orientation_bits = set([(1, 0), (1, 9), (6, 0), (6, 9)])
-        index_bits = set([(2, 0), (3, 0), (4, 0)])
-        data_index = data_index_orientation - orientation_bits
-        data_index = sorted(list(data_index))
-        data_bits = data_index[:data_bit_per_origami]
-        index_bits = data_index[data_bit_per_origami: ]
-        # data_bits = data_index - index_bits
-
-        matrix_details = dict(
-            data_bits=list(data_bits),
-            orientation_bits=sorted(list(orientation_bits)),
-            indexing_bits=list(index_bits),
-            checksum_bits=list(checksum_bit_relation.keys()),
-            parity_bits=list(parity_bit_relation.keys()),
-            orientation_data=[1, 1, 1, 0]
-        )
-        return matrix_details, parity_bit_relation, checksum_bit_relation
-
     def create_initial_matrix_from_binary_stream(self, binary_stream: str, index: int) -> object:
         """
         Insert droplet data, orientation and index bit in the matrix
@@ -138,10 +43,8 @@ class Origami:
         :return: data_matrix: Matrix with droplet data, index and orientation bits
         """
         binary_list = list(binary_stream)
-        data_matrix = np.full((self.config.layer, self.config.row, self.config.column), -1)  # All the cell of the matrix will have initial value -1.
-
-        # split binary_list based on origami level
-        splitter = np.cumsum(np.asarray([0] + [self.config.data_cells_per_level[i] for i in range(self.config.layer)]))
+        data_matrix = np.full((self.config.layer, self.config.row, self.config.column),
+                              -1)  # All the cell of the matrix will have initial value -1.
 
         # Putting the data into matrix
         for i, bit_index in enumerate(self.config.cell_purpose['data_cells']):
@@ -156,7 +59,7 @@ class Origami:
         if index >= 2 ** len(self.config.cell_purpose['indexing_cells']):
             self.logger.error(
                 'Maximum support index is {maximum_input}. But given index is {index}'.format(
-                    maximum_input=2 ** len(self.config.matrix_details["indexing_cells"]),
+                    maximum_input=2 ** len(self.config.cell_purpose["indexing_cells"]),
                     index=index
                 ))
             raise ValueError("Maximum support of index exceed")
@@ -166,7 +69,7 @@ class Origami:
         for i, bit_index in enumerate(self.config.cell_purpose['indexing_cells']):
             data_matrix[bit_index[0]][bit_index[1]][bit_index[2]] = index_bin[i]
 
-        self.logger.info("Droplet data and index has been inserted")
+        self.logger.info("Data and index has been inserted")
         return data_matrix
 
     @staticmethod
@@ -204,29 +107,13 @@ class Origami:
 
         # Set the cell value in checksum bits. This has to be before the parity bit xoring. Cause the parity bit
         # contains the checksum bits. And the default value of the checksum bit is -1. So if the parity xor happens
-        # before checksum xor then some of the parity bit will have value negative. as that would be xor with -1
+        # before checksum xor then some parity bit will have value negative. as that would be xor with -1
         encoded_matrix = Origami._xor_matrix(encoded_matrix, self.config.checksum_mapping)
         self.logger.info("Finish calculating the checksum")
         # XOR for the parity code
         encoded_matrix = Origami._xor_matrix(encoded_matrix, self.config.parity_mapping)
         self.logger.info("Finish calculating the parity bits")
         return self.matrix_to_data_stream(encoded_matrix)
-
-    @staticmethod
-    def get_data_bit_to_parity_bit(parity_bit_relation):
-        """
-        Reverse the parity bit to data bit.
-        :param parity_bit_relation: A dictionary that contains parity bit as key and
-         the respective indices that will be XORed in the parity bit as value.
-        :return: data_bit_to_parity_bit: A dictionary that contains indices as key and and respective parity
-         indices that used that indices for XORing.
-        """
-        data_bit_to_parity_bit = {}
-        for single_parity_bit in parity_bit_relation:
-            # Loop through each parity bit relation and add those
-            for single_data_bit in parity_bit_relation[single_parity_bit]:
-                data_bit_to_parity_bit.setdefault(single_data_bit, []).append(single_parity_bit)
-        return data_bit_to_parity_bit
 
     def show_encoded_matrix(self):
         """
@@ -284,14 +171,15 @@ class Origami:
         :param: data_stream: 48 bit of string
         :returns: matrix: return 3-D matrix
         """
-        matrix = np.full((self.config.layer, self.config.row, self.config.column), -1)
-        data_stream_index = 0
-        for layer in range(self.config.layer):
-            for row in range(self.config.row):
-                for column in range(self.config.column):
-                    matrix[layer][row][column] = data_stream[data_stream_index]
-                    data_stream_index += 1
-        return matrix
+        return np.asarray(list(map(int, list(data_stream)))).reshape((self.config.layer, self.config.row, self.config.column))
+        # matrix = np.full((self.config.layer, self.config.row, self.config.column), -1)
+        # data_stream_index = 0
+        # for layer in range(self.config.layer):
+        #     for row in range(self.config.row):
+        #         for column in range(self.config.column):
+        #             matrix[layer][row][column] = data_stream[data_stream_index]
+        #             data_stream_index += 1
+        # return matrix
 
     def _fix_orientation(self, matrix, option=0):
         """
@@ -317,21 +205,21 @@ class Origami:
             corrected_matrix = matrix
         elif option == 1:
             # We will just take the reverse/Flip in horizontal direction
-            corrected_matrix = np.flipud(matrix)
+            corrected_matrix = np.flip(matrix, axis=1)
         elif option == 2:
             # We will take the mirror/flip in vertical direction
-            corrected_matrix = np.fliplr(matrix)
+            corrected_matrix = np.flip(matrix, axis=2)
         elif option == 3:
             # Flip in both horizontal and vertical direction
-            corrected_matrix = np.flipud(np.fliplr(matrix))
+            corrected_matrix = np.flip(np.flip(matrix, axis=2), axis=1)
         else:
             # The orientation couldn't be determined
             # This is not correctly oriented. Will remove that after testing
             self.logger.info("Couldn't orient the origami")
             return -1, matrix
         orientation_check = True
-        for i, bit_index in enumerate(self.matrix_details["orientation_bits"]):
-            if corrected_matrix[bit_index[0]][bit_index[1]] != self.matrix_details["orientation_data"][i]:
+        for i, bit_index in enumerate(self.config.cell_purpose['orientation_cells']):
+            if corrected_matrix[bit_index[0]][bit_index[1]][bit_index[2]] != self.config.orientation_data[i]:
                 orientation_check = False
         if orientation_check:
             # returning option will tell us which way the origami was oriented.
@@ -341,7 +229,7 @@ class Origami:
             # Matrix isn't correctly oriented so we will try with other orientation
             return self._fix_orientation(matrix, option + 1)
 
-    def _find_possible_error_location(self, matrix):
+    def _find_possible_error_location(self, matrix, level):
         """
         Return all the correct and incorrect parity bits.
 
@@ -351,9 +239,10 @@ class Origami:
         """
         correct_indexes = []
         incorrect_indexes = []
-        for parity_bit_index in self.parity_bit_relation:
+        for parity_bit_index in self.config.parity_mapping_by_level[level]:
             # Now xoring every element again and checking it's correct or not
-            nearby_values = [int(matrix[a[0]][a[1]]) for a in self.parity_bit_relation[parity_bit_index]]
+            nearby_values = [int(matrix[a[0]][a[1]]) for a in
+                             self.config.parity_mapping_by_level[level][parity_bit_index]]
             xored_value = reduce(lambda i, j: int(i) ^ int(j), nearby_values)
             if matrix[parity_bit_index[0]][parity_bit_index[1]] == int(xored_value):
                 correct_indexes.append(parity_bit_index)
@@ -361,7 +250,7 @@ class Origami:
                 incorrect_indexes.append(parity_bit_index)
         return correct_indexes, incorrect_indexes
 
-    def _is_matrix_correct(self, matrix):
+    def _is_matrix_correct(self, matrix, level):
         """
         Check if all the bits of the matrix are correct or not
 
@@ -370,16 +259,13 @@ class Origami:
         Returns:
             Boolean: True if matrix is correct false otherwise
         """
-        correct_indexes, incorrect_indexes = self._find_possible_error_location(matrix)
+        correct_indexes, incorrect_indexes = self._find_possible_error_location(matrix, level)
         return len(incorrect_indexes) == 0
 
-    def _decode(self, matrix):
+    def decode_by_level(self, matrix, level):
         """
         :param matrix: Matrix that will be decoded
-        :param threshold_parity: Threshold value of parity cell to be considered as error
-        :param threshold_data: Threshold value of data cell to be considered as error
-        :param maximum_number_of_error: Maximum number of error that will be checked
-        :param false_positive: Number of false positive that will be checked
+        :param level: Level of the matrix
         :return:
         """
         # We will try to decode multiple origami so we are making the variable empty at the first
@@ -387,27 +273,24 @@ class Origami:
         # Will check the matrix weight first.
         # If matrix weight is zero that means all the parity matched
         # We will reduce this matrix weight by a greedy approach
-        _, matrix_weight, probable_error = self._get_matrix_weight(matrix, [])
+        _, matrix_weight, probable_error = self._get_matrix_weight(matrix, level, [])
         if matrix_weight == 0:
             # All parity matched now we will check orientation and checksum
             self.logger.info("No parity mismatch found at the first step")
-            single_recovered_matrix = self.return_matrix(matrix, [])
-            if not single_recovered_matrix == -1:
-                # If we don't get -1 then it means orientation and checksum also matched
-                # So we will return the recovered matrix
-                return single_recovered_matrix
+            single_recovered_matrix = self.check_checksum(matrix, level)
+            if self.check_checksum(matrix, level):
+                return matrix, []
         # We will alter each of the probable error one at a time and recalculate the matrix weight
         for single_error in probable_error:
             matrix_details[tuple(single_error)] = {}
             changed_matrix, matrix_details[tuple(single_error)]["error_value"], \
-            matrix_details[tuple(single_error)]["probable_error"] = \
-                self._get_matrix_weight(matrix, [single_error])
+                matrix_details[tuple(single_error)]["probable_error"] = \
+                self._get_matrix_weight(matrix, level, [single_error])
             # If after altering one bit only matrix_weight becomes zero then we will check checksum and parity
             if matrix_details[tuple(single_error)]["error_value"] == 0:
                 self.logger.info("After altering one bit, all the parity matched")
-                single_recovered_matrix = self.return_matrix(changed_matrix, [single_error])
-                if not single_recovered_matrix == -1:
-                    return single_recovered_matrix
+                if self.check_checksum(matrix, level):
+                    return matrix, [single_error]
         # We will sort the matrix based on the matrix weight
         matrix_details = {k: v for k, v in sorted(matrix_details.items(), key=lambda item: item[1]["error_value"])}
 
@@ -426,13 +309,12 @@ class Origami:
                     will_check_now = error_combination_checked_so_far + [single_error_in_probable_error]
                     # Find matrix error after altering will_check_now
                     changed_matrix, single_probable_matrix_weight, single_probable_error = self._get_matrix_weight(
-                        matrix,
+                        matrix, level,
                         will_check_now)  # Alter this one
 
                     if single_probable_matrix_weight == 0:
-                        single_recovered_matrix = self.return_matrix(changed_matrix, will_check_now)
-                        if not single_recovered_matrix == -1:
-                            return single_recovered_matrix
+                        if self.check_checksum(changed_matrix, level):
+                            return changed_matrix, will_check_now
 
                     # Add this newly gotten matrix weight to the variable which contains all the matrix weights
                     if single_probable_matrix_weight in matrix_weights:
@@ -466,9 +348,9 @@ class Origami:
                         break
                     else:
                         continue
-        # If it comes to this point that means we were not able return a correct matrix so far.
+        # If it comes to this point that means we were not able to return a correct matrix so far.
         # And we don't have any options
-        return -1
+        return None, None
 
     def return_matrix(self, correct_matrix, error_locations):
         """
@@ -480,30 +362,30 @@ class Origami:
         :param error_locations: Error location that has been fixed
         :return: single_recovered_matrix: Dictionary which contains details of an individual origami
         """
+        # fix orientation of the origami
+
+        # mirror all the error based on orientation
+        orientation_info, correct_matrix = self._fix_orientation(correct_matrix)
+        if orientation_info == -1:
+            self.logger.info('Orientation did not match')
+            return -1
+
+        # fix up the error locations based on the orientation
+        error_locations = self._mirror_locations(error_locations, orientation_info)
         # will return this dictionary which will have all the origami details
         single_recovered_matrix = {}
-        orientation_info, correct_matrix = self._fix_orientation(correct_matrix)
+        single_recovered_matrix['orientation_details'] = self.orientation_details[
+            str(orientation_info)]
+        single_recovered_matrix['orientation'] = orientation_info
+        single_recovered_matrix['matrix'] = correct_matrix
+        single_recovered_matrix['total_probable_error'] = len(error_locations)
+        single_recovered_matrix['probable_error_locations'] = error_locations
+        single_recovered_matrix['index'], single_recovered_matrix[
+            'binary_data'] = \
+            self.extract_text_and_index(correct_matrix)
+        self.logger.info("Origami error fixed. Error corrected: " + str(error_locations))
+        return single_recovered_matrix
 
-        if not orientation_info == -1 and self.check_checksum(correct_matrix):
-            # fix up the error locations based on the orientation
-            error_locations = self._mirror_locations(error_locations, orientation_info)
-            single_recovered_matrix['orientation_details'] = self.orientation_details[
-                str(orientation_info)]
-            single_recovered_matrix['orientation'] = orientation_info
-            single_recovered_matrix['matrix'] = correct_matrix
-            single_recovered_matrix['orientation_fixed'] = True
-            single_recovered_matrix['total_probable_error'] = len(error_locations)
-            single_recovered_matrix['probable_error_locations'] = error_locations
-            single_recovered_matrix['is_recovered'] = True
-            single_recovered_matrix['checksum_checked'] = True
-            single_recovered_matrix['index'], single_recovered_matrix[
-                'binary_data'] = \
-                self._extract_text_and_index(correct_matrix)
-            self.logger.info("Origami error fixed. Error corrected: " + str(error_locations))
-            return single_recovered_matrix
-        else:  # If orientation or checksum doesn't match we will return -1
-            self.logger.info("Orientation/checksum didn't match")
-            return -1
 
     def _mirror_locations(self, error_locations, orientation_info):
         updated_locations = []
@@ -511,14 +393,15 @@ class Origami:
             if orientation_info == 0:
                 updated_locations.append(error_location)
             elif orientation_info == 1:
-                updated_locations.append((self.config.row - 1 - error_location[0], error_location[1]))
+                updated_locations.append((error_location[0], self.config.row - 1 - error_location[1], error_location[2]))
             elif orientation_info == 2:
-                updated_locations.append((error_location[0], self.config.column - 1 - error_location[1]))
+                updated_locations.append((error_location[0], error_location[1], self.config.column - 1 - error_location[2]))
             elif orientation_info == 3:
-                updated_locations.append((self.config.row - 1 - error_location[0], self.config.column - 1 - error_location[1]))
+                updated_locations.append(
+                    (error_location, self.config.row - 1 - error_location[1], self.config.column - 1 - error_location[2]))
         return updated_locations
 
-    def _extract_text_and_index(self, matrix):
+    def extract_text_and_index(self, matrix):
         """
         Get droplet data and index of the droplet from the origami
         :param matrix: Matrix from where information will be extracted.
@@ -528,18 +411,18 @@ class Origami:
             return
         # Extracting index first
         index_bin = []
-        for bit_index in self.matrix_details['indexing_bits']:
-            index_bin.append(matrix[bit_index[0]][bit_index[1]])
+        for bit_index in self.config.cell_purpose['indexing_cells']:
+            index_bin.append(matrix[bit_index[0]][bit_index[1]][bit_index[2]])
         index_decimal = int(''.join(str(i) for i in index_bin), 2)
         # Extracting the text now
         # Extracting text index
         text_bin_data = ""
-        for bit_index in self.matrix_details['data_bits']:
-            text_bin_data += str(matrix[bit_index[0]][bit_index[1]])
+        for bit_index in self.config.cell_purpose['data_cells']:
+            text_bin_data += str(matrix[bit_index[0]][bit_index[1]][bit_index[2]])
 
         return index_decimal, text_bin_data
 
-    def _get_matrix_weight(self, matrix, changing_location):
+    def _get_matrix_weight(self, matrix, level, changing_location):
         """
         Matrix weight indicates how much error does this individual matrix contains.
         More the matrix error is more error this matrix contains.
@@ -562,21 +445,22 @@ class Origami:
             if matrix_copy[single_changing_location[0]][single_changing_location[1]] == 0:
                 matrix_copy[single_changing_location[0]][single_changing_location[1]] = 1
             else:
-                if single_changing_location in self.parity_bit_relation:
+                if single_changing_location in self.config.parity_mapping_by_level[level]:
                     false_positive_added_in_parity += 1
                 else:
                     total_false_positive_added += 1
                 matrix_copy[single_changing_location[0]][single_changing_location[1]] = 0
         # Check which parity bit matched and which didn't
         parity_bit_indexes_correct, parity_bit_indexes_incorrect = self._find_possible_error_location(
-            matrix_copy)
+            matrix_copy, level)
         # Marking all the indices that is related to the incorrect parity bit
-        probable_error_indexes = [j for i in parity_bit_indexes_incorrect for j in self.parity_bit_relation[i]]
+        probable_error_indexes = [j for i in parity_bit_indexes_incorrect for j in
+                                  self.config.parity_mapping_by_level[level][i]]
         # Marking all the indexes that is related to the unmatched checksum
         probable_error_from_checksum = []
         # Checksum indexes that didn't match after xoring it's related indices.
         unmatched_checksum = []
-        for single_checksum_index, single_checksum_relation in self.checksum_bit_relation.items():
+        for single_checksum_index, single_checksum_relation in self.config.checksum_mapping_by_level[level].items():
             nearby_values = [int(matrix_copy[a[0]][a[1]]) for a in single_checksum_relation]
             xored_value = reduce(lambda i, j: int(i) ^ int(j), nearby_values)
             # As it didn't match it might have some error
@@ -610,7 +494,7 @@ class Origami:
             # if threshold_parity < threshold_data:
             #     break
             probable_data_error.setdefault(temp_weight, []).append(item[0])
-            probable_parity_error_all.extend(self.data_bit_to_parity_bit[item[0]])
+            probable_parity_error_all.extend(self.config.data_to_parity_mapping_by_level[level][item[0]])
 
         probable_parity_error_all.extend(parity_bit_indexes_incorrect)
         probable_parity_error_all = Counter(probable_parity_error_all).most_common()
@@ -674,21 +558,38 @@ class Origami:
             :param maximum_number_of_error:
         """
         # If length of decoded data is not row * col then show error
-        if len(data_stream) != self.config.row * self.config.column:
-            raise ValueError("The data stream length should be", self.config.row * self.config.column)
+        if len(data_stream) != self.config.total_cell:
+            raise ValueError("The data stream length should be", self.config.total_cell)
         # Initial check which parity bit index gave error and which gave correct results
         # Converting the data stream to data array first
         data_matrix_for_decoding = self.data_stream_to_matrix(data_stream)
-        return self._decode(data_matrix_for_decoding)
+        recovered_origamies = []
+        recovered_errors = []
+        for level in range(self.config.layer):
+            decoded_matrix, recovered_error = self.decode_by_level(data_matrix_for_decoding[level], level)
+            if level == 0 and decoded_matrix is None:
+                # if we can not decode level 0 then we will throwout this origami
+                # because level 0 contains the orientation + index of the entire origami
+                return -1
+            recovered_error = [(level, a[0], a[1]) for a in recovered_error]
+            recovered_origamies.append(decoded_matrix)
+            recovered_errors.extend(recovered_error)
+        recovered_origamies = np.asarray(recovered_origamies)
+
+        return self.return_matrix(recovered_origamies, recovered_errors)
+
+
+
+
+
 
         #   After fixing orientation we need to check the checksum bit.
         #   If we check before orientation fixed then it will not work
 
-        # sorting the matrix
-
-    def check_checksum(self, matrix):
-        for check_sum_bit in self.checksum_bit_relation:
-            nearby_values = [int(matrix[a[0]][a[1]]) for a in self.checksum_bit_relation[check_sum_bit]]
+    def check_checksum(self, matrix, level):
+        for check_sum_bit in self.config.checksum_mapping_by_level[level]:
+            nearby_values = [int(matrix[a[0]][a[1]]) for a in
+                             self.config.checksum_mapping_by_level[level][check_sum_bit]]
             xor_value = reduce(lambda i, j: int(i) ^ int(j), nearby_values)
             if xor_value != matrix[check_sum_bit[0]][check_sum_bit[1]]:
                 self.logger.info("Checksum did not matched")
@@ -698,10 +599,15 @@ class Origami:
 
 # This is only for debugging purpose
 if __name__ == "__main__":
-    pass
-    # from config import Config
-    # config_ = Config('config.yaml')
-    # bin_stream = "00110110010101010110101011010"
+    from config import Config
+
+    config_ = Config('config.yaml')
+    print(config_.parity_mapping_by_level)
+    bin_stream = "101000100101010001010010000100011011010100110100000101100000010100110010001110000110111010010" \
+                 "1110011001010100000011000000100010101101100100101101110001000010000"
+    origami_object = Origami(config_)
+    decoded_data = origami_object.decode(bin_stream)
+    print("hello")
     # origami_object = Origami(config_)
     # encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0))
     #
