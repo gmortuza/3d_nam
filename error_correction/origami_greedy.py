@@ -1,5 +1,5 @@
 from functools import reduce
-from collections import Counter
+from collections import Counter, defaultdict
 import copy
 import numpy as np
 import logging
@@ -381,7 +381,7 @@ class Origami:
         single_recovered_matrix['total_probable_error'] = len(error_locations)
         single_recovered_matrix['probable_error_locations'] = error_locations
         single_recovered_matrix['index'], single_recovered_matrix[
-            'binary_data'] = \
+            'binary_data'], single_recovered_matrix['binary_data_by_level'] = \
             self.extract_text_and_index(correct_matrix)
         self.logger.info("Origami error fixed. Error corrected: " + str(error_locations))
         return single_recovered_matrix
@@ -417,10 +417,12 @@ class Origami:
         # Extracting the text now
         # Extracting text index
         text_bin_data = ""
+        text_bin_data_by_level = defaultdict(lambda: "")
         for bit_index in self.config.cell_purpose['data_cells']:
             text_bin_data += str(matrix[bit_index[0]][bit_index[1]][bit_index[2]])
+            text_bin_data_by_level[str(index_decimal) + "_" + str(bit_index[0])] += str(matrix[bit_index[0]][bit_index[1]][bit_index[2]])
 
-        return index_decimal, text_bin_data
+        return index_decimal, text_bin_data, text_bin_data_by_level
 
     def _get_matrix_weight(self, matrix, level, changing_location):
         """

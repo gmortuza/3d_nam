@@ -1,7 +1,7 @@
 # common parameters
 row: 8
 column: 10
-layer: 2
+layer: 8
 verbose: true
 
 # Mapping
