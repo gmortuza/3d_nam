@@ -4,8 +4,7 @@ import copy
 import numpy as np
 import logging
 from log import get_logger
-
-from find_optimum_mapping import Mapping
+import utils
 
 
 class Origami:
@@ -113,7 +112,7 @@ class Origami:
         # XOR for the parity code
         encoded_matrix = Origami._xor_matrix(encoded_matrix, self.config.parity_mapping)
         self.logger.info("Finish calculating the parity bits")
-        return self.matrix_to_data_stream(encoded_matrix)
+        return utils.matrix_to_data_stream(self.config, encoded_matrix)
 
     def show_encoded_matrix(self):
         """
@@ -121,65 +120,8 @@ class Origami:
 
         :returns: None
         """
-        self.print_matrix(self.encoded_matrix)
+        utils.print_matrix(self.encoded_matrix)
 
-    def print_matrix(self, matrix, in_file=False):
-        """
-        Display a given matrix
-
-        :param: matrix: A 3-D matrix
-        :param: in_file: if we want to save the encoding information in a file.
-
-        :returns: None
-        """
-        for layer in range(self.config.layer):
-            if not in_file:
-                print("Layer: ", layer, end="\n")
-            else:
-                print("Layer: ", layer, end="\n", file=in_file)
-            for row in range(self.config.row):
-                for column in range(self.config.column):
-                    if not in_file:
-                        print(matrix[layer][row][column], end="\t")
-                    else:
-                        print(matrix[layer][row][column], end="\t", file=in_file)
-                if not in_file:
-                    print("")
-                else:
-                    print("", file=in_file)
-
-    def matrix_to_data_stream(self, matrix):
-        """
-        Convert 2-D matrix to string
-
-        :param: matrix: A 2-D matrix
-        :returns: data_stream: string of 2-D matrix
-        """
-        data_stream = []
-        for level in range(self.config.layer):
-            for row in range(self.config.row):
-                for column in range(self.config.column):
-                    data_stream.append(matrix[level][row][column])
-        return ''.join(str(i) for i in data_stream)
-
-    def data_stream_to_matrix(self, data_stream):
-        """
-        Convert a sting to 3-D matrix
-
-        The length of data stream should be 48 bit currently this algorithm is only working with 6x8 matrix
-
-        :param: data_stream: 48 bit of string
-        :returns: matrix: return 3-D matrix
-        """
-        return np.asarray(list(map(int, list(data_stream)))).reshape((self.config.layer, self.config.row, self.config.column))
-        # matrix = np.full((self.config.layer, self.config.row, self.config.column), -1)
-        # data_stream_index = 0
-        # for layer in range(self.config.layer):
-        #     for row in range(self.config.row):
-        #         for column in range(self.config.column):
-        #             matrix[layer][row][column] = data_stream[data_stream_index]
-        #             data_stream_index += 1
-        # return matrix
 
     def _fix_orientation(self, matrix, option=0):
         """
@@ -564,7 +506,7 @@ class Origami:
             raise ValueError("The data stream length should be", self.config.total_cell)
         # Initial check which parity bit index gave error and which gave correct results
         # Converting the data stream to data array first
-        data_matrix_for_decoding = self.data_stream_to_matrix(data_stream)
+        data_matrix_for_decoding = utils.data_stream_to_matrix(self.config, data_stream)
         recovered_origamies = []
         recovered_errors = []
         for level in range(self.config.layer):
@@ -579,14 +521,6 @@ class Origami:
         recovered_origamies = np.asarray(recovered_origamies)
 
         return self.return_matrix(recovered_origamies, recovered_errors)
-
-
-
-
-
-
-        #   After fixing orientation we need to check the checksum bit.
-        #   If we check before orientation fixed then it will not work
 
     def check_checksum(self, matrix, level):
         for check_sum_bit in self.config.checksum_mapping_by_level[level]:
@@ -609,22 +543,4 @@ if __name__ == "__main__":
                  "1110011001010100000011000000100010101101100100101101110001000010000"
     origami_object = Origami(config_)
     decoded_data = origami_object.decode(bin_stream)
-    print("hello")
-    # origami_object = Origami(config_)
-    # encoded_file = origami_object.data_stream_to_matrix(origami_object.encode(bin_stream, 0))
-    #
-    # encoded_file[1][0] = 0
-    # encoded_file[0][6] = 0
-    #
-    # encoded_file = np.flipud(np.fliplr(encoded_file))
-    #
-    # new_origami_object = Origami(config_)
-    # decoded_file = new_origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
-    #
-    # # decoded_file = origami_object.decode(origami_object.matrix_to_data_stream(encoded_file))
-    #
-    # print(decoded_file)
-    # if not decoded_file == -1 and decoded_file['binary_data'] == bin_stream:
-    #     print("Decoded successfully")
-    # else:
-    #     print("wasn't decoded successfully")
+

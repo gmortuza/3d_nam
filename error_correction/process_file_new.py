@@ -7,6 +7,7 @@ from functools import partial
 from config import Config
 from log import get_logger
 from origami_greedy import Origami
+import utils
 
 
 class ProcessFile:
@@ -89,7 +90,7 @@ class ProcessFile:
                                 error_location=str(decoded_matrix['probable_error_locations']).replace(',', ' '),
                                 orientation=decoded_matrix['orientation'],
                                 decoded_index=decoded_matrix['index'],
-                                decoded_origami=self.origami.matrix_to_data_stream(decoded_matrix['matrix']),
+                                decoded_origami=utils.matrix_to_data_stream(self.config, decoded_matrix['matrix']),
                                 decoded_data=decoded_matrix['binary_data'],
                                 decoding_time=decoded_time,
                                 current_origami_index=single_origami[0]))
