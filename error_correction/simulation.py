@@ -95,52 +95,42 @@ def degrade(file_in, file_out, number_of_error, config):
     encode_file_list = encoded_file.readlines() * config.sim_copies_of_each_origamies
     random.shuffle(encode_file_list)
     encode_file_list = change_orientation(config, encode_file_list)
-    false_positive_details = {}
     total_origami = len(encode_file_list)
     total_error = int(number_of_error * total_origami)
-    total_maximum_false_positive_insert = int(total_error * .3)
+    total_false_positive_errors = int(total_error * config.sim_fp_error_percent)  # 0 --> 1
+    total_true_positive_errors = total_error - total_false_positive_errors  # 1 --> 0
+
     false_positive_inserted = 0
+    # get all cells that are 1
+    encode_file_arr = np.asarray(encode_file_list)
     # Error will be introduced on average per origami
     if not config.sim_average_error_dist:
-        # Each origami will have different number of error
-        # Total number of error will be same
-        while total_error_inserted < total_error:
-            random_index = random.choice(range(total_origami))
-            if random_index not in false_positive_details:
-                false_positive_details[random_index] = 0
-            error_row = random.choice(range(config.row))
-            error_column = random.choice(range(config.column))
-            error_layer = random.choice(range(config.layer))
-            if encode_file_list[random_index][error_row][error_column] == 1:
-                encode_file_list[random_index][error_row][error_column] = 0
-                total_error_inserted += 1
-            elif false_positive_details[random_index] < false_positive_per_origami \
-                    and false_positive_inserted < total_maximum_false_positive_insert:
-                encode_file_list[random_index][error_row][error_column] = 1
-                false_positive_details[random_index] += 1
-                total_error_inserted += 1
-                false_positive_inserted += 1
+        # get random index to insert error
+        one_cells = np.argwhere(encode_file_arr == 1)
+        random_index = random.sample(range(len(one_cells)), total_true_positive_errors)
+        for idx in random_index:
+            i, l, r, c = one_cells[idx]
+            encode_file_list[i][l][r][c] = 0
+            total_error_inserted += 1
     # Each origami will be fixed amount of error
     else:
-        # each origami will have same number of error
+        # evenly distribute errors
+        number_of_error = int(total_true_positive_errors / (total_origami * config.layer))
         for index in range(len(encode_file_list)):
-            error_inserted = 0
-            if index not in false_positive_details:
-                false_positive_details[index] = 0
-            while error_inserted < number_of_error:  # In error only 1 will be 0. 0 won't be 1
-                error_row = random.choice(range(ROW_NUMBER))
-                error_column = random.choice(range(COLUMN_NUMBER))
-                if encode_file_list[index][error_row][error_column] == 1:
-                    encode_file_list[index][error_row][error_column] = 0
+            for layer in range(config.layer):
+                one_cells = np.argwhere(encode_file_arr[index][layer] == 1)
+                random_index = random.sample(range(len(one_cells)), number_of_error)
+                for idx in random_index:
+                    r, c = one_cells[idx]
+                    encode_file_list[index][layer][r][c] = 0
                     total_error_inserted += 1
-                    error_inserted += 1
-                elif false_positive_details[index] < false_positive_per_origami and \
-                        false_positive_inserted < total_maximum_false_positive_insert:
-                    encode_file_list[index][error_row][error_column] = 1
-                    false_positive_details[index] += 1
-                    total_error_inserted += 1
-                    false_positive_inserted += 1
-                    error_inserted += 1
+
+    zero_cells = np.argwhere(encode_file_arr == 0)
+    random_index = random.sample(range(len(zero_cells)), total_false_positive_errors)
+    for idx in random_index:
+        i, l, r, c = zero_cells[idx]
+        encode_file_list[i][l][r][c] = 1
+        total_error_inserted += 1
 
     for single_origami in encode_file_list:
         degraded_origami = utils.matrix_to_data_stream(config, single_origami)
@@ -164,10 +154,10 @@ def create_result_file(config):
             result_file = open(RESULT_FILE_NAME, "a")
         else:
             result_file = open(RESULT_FILE_NAME, "w")
-            result_file.write("File size,Bits per origami,total origami,"
-                              "Number of copies of each origami,Encoding time,"
-                              "Number of error per origami,Total number of error,Total number of error detected,"
-                              "Incorrect origami,Correct Origami,Missing origamies,Decoding time,status,threshold data,"
+            result_file.write("File size,row,column,layer,parity percent,checksum percent,parity coverage,"
+                              "Number of copies of each origami,Maximum number of error checked per origami,"
+                              "Encoding time,Decoding time,Number of error per origami,Total number of error,"
+                              "Total number of error detected,Incorrect origami,Correct Origami,Missing origamies,status,threshold data,"
                               "threshold parity,false positive\n")
         # Closing the file otherwise it will be copied on the multi processing
         # Each process copied all the open file descriptor. If this we don't close this file here.
@@ -183,6 +173,7 @@ def create_result_file(config):
 
 def run_simulation(config):
     for file_size in list(range(config.sim_file_size[0], config.sim_file_size[1], config.sim_file_size[2])):
+        config.file_size = file_size
         test_file_name = SIMULATION_DIRECTORY + "/test_" + str(file_size)
         logger.info("working with file size: {file_size}".format(file_size=file_size))
         # Generate random binary file for encoding
@@ -191,18 +182,16 @@ def run_simulation(config):
         # encode the randomly generated file
         dnam_object = ProcessFile(config)
         encoded_file_name = test_file_name + "_encode"
-        decoded_file_name = test_file_name + "_decode"
         start_time = time.time()
         # Encode the file
         dnam_object.encode(test_file_name, encoded_file_name)
+        config.correct_file = encoded_file_name
         encoding_time = round((time.time() - start_time), 2)
-        for error_in_each_origami in range(config.maximum_error_to_fix + 1):
+        for error_in_each_origami in range(4, config.maximum_error_to_fix + 1):
             error_in_each_origami = round(error_in_each_origami * config.layer, 2)
             logger.info(f"Checking error: {error_in_each_origami}")
             degraded_file_name = encoded_file_name + "_degraded_copy_" + str(
                 config.sim_copies_of_each_origamies) + "_error_" + str(error_in_each_origami)
-            decoded_file_name = test_file_name + "_decoded_copy_" + str(config.sim_copies_of_each_origamies) + "_error_" + str(
-                error_in_each_origami)
             # if error_in_each_origami == 0:
             total_error_insertion = degrade(encoded_file_name, degraded_file_name, error_in_each_origami, config)
             logger.info("Degradation done")
@@ -210,6 +199,8 @@ def run_simulation(config):
             # try to decode with different decoding parameter
             for threshold_data in range(2, 4):  # This two loops are for the parameter.
                 for threshold_parity in range(2, 4):  # Now we are choosing only one parameter.
+                    config.data_threshold = threshold_data
+                    config.parity_threshold = threshold_parity
                     decoded_file_name = test_file_name + "_decoded_copy_" + str(config.sim_copies_of_each_origamies) + "_error_" + \
                                         str(error_in_each_origami) + "_scp_" + str(threshold_data) + \
                                         "_tempweight_" + str(threshold_parity)
@@ -235,11 +226,11 @@ def run_simulation(config):
                         missing_origamies = []
                     decoding_time = round((time.time() - start_time), 2)
                     with open(RESULT_FILE_NAME, "a") as result_file:
-                        result_file.write(f"{file_size},{config.row},{config.column},{config.layer},{config.sim_parity_percent},"
-                                          f"{config.sim_checksum_percent},{config.sim_parity_coverage},"
+                        result_file.write(f"{file_size},{config.row},{config.column},{config.layer},{config.parity_percent},"
+                                          f"{config.checksum_percent},{config.parity_coverage},"
                                           f"{config.sim_copies_of_each_origamies},"
                                           f"{config.sim_maximum_number_of_error_checked_per_origami},{encoding_time},{decoding_time},{error_in_each_origami},{total_error_insertion},"
-                                          f"{total_error_fixed},{incorrect_origami},{correct_origami},{str(missing_origamies).replace(',', ' ')},{status},{threshold_data},{threshold_parity},{config.sim_fp_error_percent}\n")
+                                          f"{total_error_fixed},{incorrect_origami},{correct_origami},{str(list(missing_origamies)).replace(',', ' ')},{status},{config.data_threshold},{config.parity_threshold},{config.sim_fp_error_percent}\n")
                     if os.path.exists(decoded_file_name) and status == 1:
                         os.remove(decoded_file_name)
                         pass

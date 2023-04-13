@@ -219,7 +219,6 @@ class Origami:
         if matrix_weight == 0:
             # All parity matched now we will check orientation and checksum
             self.logger.info("No parity mismatch found at the first step")
-            single_recovered_matrix = self.check_checksum(matrix, level)
             if self.check_checksum(matrix, level):
                 return matrix, []
         # We will alter each of the probable error one at a time and recalculate the matrix weight
@@ -292,7 +291,7 @@ class Origami:
                         continue
         # If it comes to this point that means we were not able to return a correct matrix so far.
         # And we don't have any options
-        return None, None
+        return None, []
 
     def return_matrix(self, correct_matrix, error_locations):
         """
@@ -515,10 +514,12 @@ class Origami:
                 # if we can not decode level 0 then we will throwout this origami
                 # because level 0 contains the orientation + index of the entire origami
                 return -1
+            if decoded_matrix is None:
+                decoded_matrix = np.full((self.config.row, self.config.column), -1)
             recovered_error = [(level, a[0], a[1]) for a in recovered_error]
             recovered_origamies.append(decoded_matrix)
             recovered_errors.extend(recovered_error)
-        recovered_origamies = np.asarray(recovered_origamies)
+        recovered_origamies = np.asarray(recovered_origamies, dtype=object)
 
         return self.return_matrix(recovered_origamies, recovered_errors)
 
@@ -538,9 +539,8 @@ if __name__ == "__main__":
     from config import Config
 
     config_ = Config('config.yaml')
-    print(config_.parity_mapping_by_level)
-    bin_stream = "101000100101010001010010000100011011010100110100000101100000010100110010001110000110111010010" \
-                 "1110011001010100000011000000100010101101100100101101110001000010000"
+    bin_stream = "101110111101000100101011101000101101101100000100101101110101000010011001111100011100100001111110100001011110000011011011001011110110100010001101001100110101111010110111100101001111110101010011010110100111000000111010001010101000011101000010"
     origami_object = Origami(config_)
     decoded_data = origami_object.decode(bin_stream)
+    print(decoded_data)
 

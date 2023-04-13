@@ -59,21 +59,27 @@ class Config:
         self.data_cells_per_origami = len(self.cell_purpose['data_cells'])
 
         # Level wise mapping
-        self.parity_mapping_by_level = defaultdict(lambda: defaultdict(list))
-        self.checksum_mapping_by_level = defaultdict(lambda: defaultdict(list))
-        self.data_to_parity_mapping_by_level = defaultdict(lambda: defaultdict(list))
+        self.parity_mapping_by_level = {}
+        self.checksum_mapping_by_level = {}
+        self.data_to_parity_mapping_by_level = {}
 
         for parity_bit, data_bits in self.parity_mapping.items():
             # data bits without level
             data_bits_without_level = [data_bit[1:] for data_bit in data_bits]
+            if parity_bit[0] not in self.parity_mapping_by_level:
+                self.parity_mapping_by_level[parity_bit[0]] = {}
             self.parity_mapping_by_level[parity_bit[0]][(parity_bit[1], parity_bit[2])] = data_bits_without_level
 
         for checksum_bit, data_bits in self.checksum_mapping.items():
             data_bits_without_level = [data_bit[1:] for data_bit in data_bits]
+            if checksum_bit[0] not in self.checksum_mapping_by_level:
+                self.checksum_mapping_by_level[checksum_bit[0]] = {}
             self.checksum_mapping_by_level[checksum_bit[0]][(checksum_bit[1], checksum_bit[2])] = data_bits_without_level
 
         for data_bit, parity_bits in self.data_to_parity_mapping.items():
             parity_bits_without_level = [parity_bit[1:] for parity_bit in parity_bits]
+            if data_bit[0] not in self.data_to_parity_mapping_by_level:
+                self.data_to_parity_mapping_by_level[data_bit[0]] = {}
             self.data_to_parity_mapping_by_level[data_bit[0]][(data_bit[1], data_bit[2])] = parity_bits_without_level
 
 

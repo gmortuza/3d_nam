@@ -1,5 +1,6 @@
 import math
 import multiprocessing
+from multiprocessing.pool import ThreadPool as Pool
 import time
 from collections import Counter, defaultdict
 from functools import partial
@@ -37,7 +38,7 @@ class ProcessFile:
             encoded_stream = self.origami.encode(origami_data, idx)
             if self.config.encode_formatted_output:
                 print("Matrix -> " + str(idx), file=file_out)
-                self.origami.print_matrix(self.origami.data_stream_to_matrix(encoded_stream), in_file=file_out)
+                self.origami.print_matrix(utils.data_stream_to_matrix(self.config, encoded_stream), in_file=file_out)
             else:
                 file_out.write(encoded_stream + '\n')
 
@@ -45,14 +46,18 @@ class ProcessFile:
         self.logger.info("Encoding done")
 
     def single_origami_decode(self, single_origami, ior_file_name, correct_dictionary):
+        print(single_origami)
         current_time = time.time()
         self.logger.info("Working on origami(%d): %s", single_origami[0], single_origami[1])
         if len(single_origami[1]) != self.config.layer * self.config.row * self.config.column:
             self.logger.warning("Data point is missing in the origami")
             return
+
         try:
             decoded_matrix = self.origami.decode(single_origami[1])
         except Exception as e:
+            print('here')
+            print(e)
             self.logger.exception(e)
             return
 
@@ -126,8 +131,10 @@ class ProcessFile:
         if self.config.correct_file:
             with open(self.config.correct_file) as cf:
                 for so in cf:
-                    ci, cd = self.origami.extract_text_and_index(self.data_stream_to_matrix(so.rstrip("\n")))
+                    ci, cd, data_by_level = self.origami.extract_text_and_index(utils.data_stream_to_matrix(self.config, so.rstrip("\n")))
                     correct_dictionary[ci] = cd
+                    for level, level_data in data_by_level.items():
+                        correct_dictionary[level] = level_data
         # Decoded dictionary with number of occurrence of a single origami
         decoded_dictionary_wno = {}
         binary_data_by_origami_index_level = defaultdict(list)
@@ -136,7 +143,7 @@ class ProcessFile:
                                           correct_dictionary=correct_dictionary)
         if self.config.use_multi_core:
             optimum_number_of_process = int(math.ceil(multiprocessing.cpu_count()))
-            pool = multiprocessing.Pool(processes=optimum_number_of_process)
+            pool = Pool(processes=optimum_number_of_process)
             return_value = pool.map(p_single_origami_decode, origami_data)
             pool.close()
             pool.join()
@@ -162,10 +169,10 @@ class ProcessFile:
         # can not check missing origami if file size is not given
         if hasattr(self.config, 'file_size'):
             file_size_in_bit = 8 * self.config.file_size
-            origami_needed = math.ceil(file_size_in_bit / file_size_in_bit)
+            origami_needed = math.ceil(file_size_in_bit / self.config.data_cells_per_origami)
             total_origami_idx_level = set()
             for idx in range(origami_needed):
-                for level in self.config.layer:
+                for level in range(self.config.layer):
                     total_origami_idx_level.add(str(idx) + '_' + str(level))
             missing_origami = total_origami_idx_level - set(binary_data_by_origami_index_level.keys())
 

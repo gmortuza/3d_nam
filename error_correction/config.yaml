@@ -2,7 +2,7 @@
 row: 8
 column: 10
 layer: 4
-verbose: true
+verbose: True
 
 # Mapping
 parity_coverage: 8 # Each parity bit will have XOR of 8 data bits
@@ -25,7 +25,7 @@ save_ior: True # save individual origami information during decoding
 maximum_error_to_fix: 8
 correct_file: ''  # original encoded file. helps to check the status of the origami(decoded or not)
 write_individual_origami_info: True
-use_multi_core: False
+use_multi_core: True
 parity_threshold: 2
 data_threshold: 2
 check_for_false_positive: 0

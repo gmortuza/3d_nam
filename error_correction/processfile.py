@@ -177,7 +177,7 @@ class ProcessFile(Origami):
                                           correct_dictionary=correct_dictionary)
         if self.config.use_multi_core:
             optimum_number_of_process = int(math.ceil(multiprocessing.cpu_count()))
-            pool = multiprocessing.Pool(processes=optimum_number_of_process)
+            pool = Pool(processes=optimum_number_of_process)
             return_value = pool.map(p_single_origami_decode, origami_data)
             pool.close()
             pool.join()
@@ -198,6 +198,7 @@ class ProcessFile(Origami):
         # perform majority voting
         final_origami_data = [None] * segment_size
         for key, value in decoded_dictionary_wno.items():
+            # TODO: if contains -1 then take the next one
             final_origami_data[key] = Counter(value).most_common(1)[0][0]
 
         missing_origami = [i for i, val in enumerate(final_origami_data) if val is None]
