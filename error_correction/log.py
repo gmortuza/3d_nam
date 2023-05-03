@@ -17,16 +17,16 @@ def get_logger(verbose=0, logger_name=__name__):
     setattr(logger, '_init', True)
     stream_handler = logging.StreamHandler(sys.stdout)
     if verbose == 1:
-        stream_handler.setLevel(logging.DEBUG)
+        # stream_handler.setLevel(logging.DEBUG)
         logger.setLevel(logging.DEBUG)
     elif verbose == 2:
-        stream_handler.setLevel(logging.INFO)
+        # stream_handler.setLevel(logging.INFO)
         logger.setLevel(logging.INFO)
     elif verbose == 3:
-        stream_handler.setLevel(logging.WARNING)
+        # stream_handler.setLevel(logging.WARNING)
         logger.setLevel(logging.WARNING)
     else:
-        stream_handler.setLevel(logging.ERROR)
+        # stream_handler.setLevel(logging.ERROR)
         logger.setLevel(logging.ERROR)
 
     stream_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))

@@ -46,7 +46,6 @@ class ProcessFile:
         self.logger.info("Encoding done")
 
     def single_origami_decode(self, single_origami, ior_file_name, correct_dictionary):
-        print(single_origami)
         current_time = time.time()
         self.logger.info("Working on origami(%d): %s", single_origami[0], single_origami[1])
         if len(single_origami[1]) != self.config.layer * self.config.row * self.config.column:
@@ -158,12 +157,12 @@ class ProcessFile:
                     else:
                         incorrect_origami += 1
                 total_error_fixed += int(decoded_matrix[0]['total_probable_error'])
-                data_in_binary = decoded_matrix[0]['binary_data']
                 for idx_level, binary_val in decoded_matrix[0]['binary_data_by_level'].items():
-                    binary_data_by_origami_index_level[idx_level].append(binary_val)
+                    if '-' not in binary_val:
+                        binary_data_by_origami_index_level[idx_level].append(binary_val)
 
-                decoded_dictionary_wno.setdefault(decoded_matrix[0]['index'], []).append(
-                    decoded_matrix[0]['binary_data'])
+                # decoded_dictionary_wno.setdefault(decoded_matrix[0]['index'], []).append(
+                #     decoded_matrix[0]['binary_data'])
 
         missing_origami = -1
         # can not check missing origami if file size is not given

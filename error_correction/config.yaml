@@ -25,17 +25,17 @@ save_ior: True # save individual origami information during decoding
 maximum_error_to_fix: 8
 correct_file: ''  # original encoded file. helps to check the status of the origami(decoded or not)
 write_individual_origami_info: True
-use_multi_core: True
+use_multi_core: False
 parity_threshold: 2
 data_threshold: 2
 check_for_false_positive: 0
 
 ########  SIMULATION CONFIGURATION ##########
 # most of the value will be a list. a random value from this list will be chosen during simulation
-sim_file_size: [20, 2000, 40]  # start, end, gap
+sim_file_size: [30, 2000, 60]  # start, end, gap
 sim_rows: [8]
 sim_cols: [10]
-sim_layers: [3]
+sim_layers: [2]
 sim_parity_percent: [.35]
 sim_checksum_percent: [.05]
 sim_parity_coverage: [8]
