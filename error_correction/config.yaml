@@ -6,7 +6,7 @@ verbose: True
 
 # Mapping
 parity_coverage: 8 # Each parity bit will have XOR of 8 data bits
-parity_percent: .35
+parity_percent: .45
 checksum_percent: .05
 total_index_bit: 4
 total_orientation_bit: 4
@@ -36,10 +36,9 @@ sim_file_size: [30, 2000, 60]  # start, end, gap
 sim_rows: [8]
 sim_cols: [10]
 sim_layers: [2]
-sim_parity_percent: [.35]
+sim_parity_percent: [.45]
 sim_checksum_percent: [.05]
 sim_parity_coverage: [8]
-sim_copies_of_each_origamies: 10
+sim_copies_of_each_origamies: 20
 sim_fp_error_percent: 0  # false positive error percent
 sim_average_error_dist: False
-sim_maximum_number_of_error_checked_per_origami: 12

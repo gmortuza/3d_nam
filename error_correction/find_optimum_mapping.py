@@ -35,7 +35,7 @@ class Mapping:
         self.parity_coverage = 8
 
     def get_nearest_number_to_match_multiple(self, number):
-        available_numbers = np.asarray(range(0, self.total_bits, self.config.layer * self.config.total_orientation_bit))
+        available_numbers = np.asarray(range(0, self.total_bits, self.config.total_orientation_bit))
         distances = np.abs(available_numbers - number)
         argmin = np.argmin(distances)
         return int(available_numbers[argmin])
@@ -163,10 +163,7 @@ class Mapping:
         # draw a random cell from each level and assign it as a parity bit
         random_cells = []
         while len(random_cells) < total_cells:
-            # randomize which layer to choose from
-            randomized_layer = list(range(self.config.layer))
-            random.shuffle(randomized_layer)
-            for layer in randomized_layer:
+            for layer in range(self.config.layer):
                 if len(random_cells) >= total_cells:
                     break
                 random_cell = random.choice(list(available_cells_by_layer[layer]))

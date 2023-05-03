@@ -156,9 +156,9 @@ def create_result_file(config):
             result_file = open(RESULT_FILE_NAME, "w")
             result_file.write("File size,row,column,layer,parity percent,checksum percent,parity coverage,"
                               "Number of copies of each origami,Maximum number of error checked per origami,"
-                              "Encoding time,Decoding time,Number of error per origami,Total number of error,"
-                              "Total number of error detected,Incorrect origami,Correct Origami,Missing origamies,status,threshold data,"
-                              "threshold parity,false positive\n")
+                              "Decoding time,Number of error per origami,Total number of error,"
+                              "Total number of error detected,Incorrect origami,Correct Origami,Missing origamies,"
+                              "status,threshold data,threshold parity,false positive\n")
         # Closing the file otherwise it will be copied on the multi processing
         # Each process copied all the open file descriptor. If this we don't close this file here.
         # Then this file descriptor  will be copied by each process hence memory consumption will
@@ -197,8 +197,8 @@ def run_simulation(config):
             logger.info("Degradation done")
             dnam_decode = ProcessFile(config)
             # try to decode with different decoding parameter
-            for threshold_data in range(2, 4):  # This two loops are for the parameter.
-                for threshold_parity in range(2, 4):  # Now we are choosing only one parameter.
+            for threshold_data in range(2, 3):  # This two loops are for the parameter.
+                for threshold_parity in range(2, 3):  # Now we are choosing only one parameter.
                     config.data_threshold = threshold_data
                     config.parity_threshold = threshold_parity
                     decoded_file_name = test_file_name + "_decoded_copy_" + str(config.sim_copies_of_each_origamies) + "_error_" + \
@@ -229,7 +229,7 @@ def run_simulation(config):
                         result_file.write(f"{file_size},{config.row},{config.column},{config.layer},{config.parity_percent},"
                                           f"{config.checksum_percent},{config.parity_coverage},"
                                           f"{config.sim_copies_of_each_origamies},"
-                                          f"{config.sim_maximum_number_of_error_checked_per_origami},{encoding_time},{decoding_time},{error_in_each_origami},{total_error_insertion},"
+                                          f"{encoding_time},{decoding_time},{error_in_each_origami},{total_error_insertion},"
                                           f"{total_error_fixed},{incorrect_origami},{correct_origami},{str(list(missing_origamies)).replace(',', ' ')},{status},{config.data_threshold},{config.parity_threshold},{config.sim_fp_error_percent}\n")
                     if os.path.exists(decoded_file_name) and status == 1:
                         os.remove(decoded_file_name)
