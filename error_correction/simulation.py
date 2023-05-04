@@ -187,7 +187,7 @@ def run_simulation(config):
         dnam_object.encode(test_file_name, encoded_file_name)
         config.correct_file = encoded_file_name
         encoding_time = round((time.time() - start_time), 2)
-        for error_in_each_origami in range(4, config.maximum_error_to_fix + 1):
+        for error_in_each_origami in range(config.maximum_error_to_fix + 1):
             error_in_each_origami = round(error_in_each_origami * config.layer, 2)
             logger.info(f"Checking error: {error_in_each_origami}")
             degraded_file_name = encoded_file_name + "_degraded_copy_" + str(

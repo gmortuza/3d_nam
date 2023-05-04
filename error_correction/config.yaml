@@ -25,7 +25,7 @@ save_ior: True # save individual origami information during decoding
 maximum_error_to_fix: 8
 correct_file: ''  # original encoded file. helps to check the status of the origami(decoded or not)
 write_individual_origami_info: True
-use_multi_core: False
+use_multi_core: True
 parity_threshold: 2
 data_threshold: 2
 check_for_false_positive: 0
@@ -39,6 +39,6 @@ sim_layers: [2]
 sim_parity_percent: [.45]
 sim_checksum_percent: [.05]
 sim_parity_coverage: [8]
-sim_copies_of_each_origamies: 20
+sim_copies_of_each_origamies: 25
 sim_fp_error_percent: 0  # false positive error percent
 sim_average_error_dist: False
