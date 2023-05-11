@@ -6,14 +6,14 @@ import filecmp
 import datetime
 import random
 import argparse
-from error_correction.config import Config
+from config import Config
 import utils
 
 sys.path.append("../dnam/")
 
 # TODO: Revert to process file
-from error_correction.process_file_new import ProcessFile
-from error_correction.log import get_logger
+from process_file_new import ProcessFile
+from log import get_logger
 
 parser = argparse.ArgumentParser(description="Simulation file for 3dNAM")
 parser.add_argument("-s", "--start", help="Starting file size in bytes", type=int, default=20)
@@ -90,6 +90,7 @@ def degrade(file_in, file_out, number_of_error, config):
         encoded_file = open(file_in, "r")
     except Exception as e:
         logger.error(e)
+        return
     total_error_inserted = 0
     origami_number = 0
     encode_file_list = encoded_file.readlines() * config.sim_copies_of_each_origamies
@@ -115,6 +116,7 @@ def degrade(file_in, file_out, number_of_error, config):
     # Each origami will be fixed amount of error
     else:
         # evenly distribute errors
+        # TODO: need to update this
         number_of_error = int(total_true_positive_errors / (total_origami * config.layer))
         for index in range(len(encode_file_list)):
             for layer in range(config.layer):
@@ -210,9 +212,11 @@ def run_simulation(config):
                             = dnam_decode.decode(degraded_file_name, decoded_file_name)
                         if os.path.exists(encoded_file_name) and os.path.exists(decoded_file_name) and filecmp.cmp(
                                 test_file_name, decoded_file_name):
+                            logger.info("File matched")
                             status = 1
                         else:
                             if decoding_status == -1:
+                                logger.info("File didn't match")
                                 status = -1  # We could detect
                             else:
                                 status = 0  # We couldn't detect
@@ -235,8 +239,8 @@ def run_simulation(config):
                         os.remove(decoded_file_name)
                         pass
             del dnam_decode
-            if status == 1:  # if we can decode the file we will remove that. Other wise keep it for future debug reference.
-                os.remove(degraded_file_name)
+            # # if status == 1:  # if we can decode the file we will remove that. Other wise keep it for future debug reference.
+            #     os.remove(degraded_file_name)
         del dnam_object  # clearing up the memory
 
 

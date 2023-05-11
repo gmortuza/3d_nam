@@ -2,7 +2,7 @@ from collections import defaultdict, Counter
 
 import yaml
 
-from error_correction.find_optimum_mapping import Mapping
+from find_optimum_mapping import Mapping
 
 
 class Config:

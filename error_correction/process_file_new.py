@@ -130,7 +130,8 @@ class ProcessFile:
         if self.config.correct_file:
             with open(self.config.correct_file) as cf:
                 for so in cf:
-                    ci, cd, data_by_level = self.origami.extract_text_and_index(utils.data_stream_to_matrix(self.config, so.rstrip("\n")))
+                    ci, cd, data_by_level = self.origami.extract_text_and_index(
+                        utils.data_stream_to_matrix(self.config, so.rstrip("\n")))
                     correct_dictionary[ci] = cd
                     for level, level_data in data_by_level.items():
                         correct_dictionary[level] = level_data

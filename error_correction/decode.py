@@ -1,7 +1,7 @@
 import argparse
 
 from error_correction.config import Config
-from processfile import ProcessFile
+from error_correction.process_file_new import ProcessFile
 
 
 def read_args():
@@ -22,7 +22,7 @@ def main():
     args = read_args()
     config = Config(args.config)
     dnam_decode = ProcessFile(config)
-    dnam_decode.decode(args.file_in, args.file_out, args.file_size)
+    dnam_decode.decode(args.file_in, args.file_out)
 
 
 if __name__ == '__main__':

@@ -147,7 +147,7 @@ class ProcessFile(Origami):
             # File to store individual origami information
             if self.config.write_individual_origami_info:
                 ior_file_name = file_out + "_ior.csv"
-                with open(ior_file_name, "w") as ior_file:
+                with open(ior_file_name, "w+") as ior_file:
                     ior_file.write(
                         "Line number in file, origami,status,error,error location,orientation,decoded index,"
                         "decoded origami, decoded data,decoding time\n")

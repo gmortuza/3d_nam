@@ -1,8 +1,8 @@
 # common parameters
 row: 8
 column: 10
-layer: 4
-verbose: True
+layer: 3
+verbose: False
 
 # Mapping
 parity_coverage: 8 # Each parity bit will have XOR of 8 data bits
@@ -29,16 +29,17 @@ use_multi_core: True
 parity_threshold: 2
 data_threshold: 2
 check_for_false_positive: 0
+time_out_threshold: 120  # in seconds (-1 for no timeout)
 
 ########  SIMULATION CONFIGURATION ##########
 # most of the value will be a list. a random value from this list will be chosen during simulation
-sim_file_size: [30, 2000, 60]  # start, end, gap
+sim_file_size: [30, 2000, 30]  # start, end, gap
 sim_rows: [8]
 sim_cols: [10]
-sim_layers: [2]
+sim_layers: [3]
 sim_parity_percent: [.45]
 sim_checksum_percent: [.05]
 sim_parity_coverage: [8]
-sim_copies_of_each_origamies: 25
+sim_copies_of_each_origamies: 10
 sim_fp_error_percent: 0  # false positive error percent
 sim_average_error_dist: False

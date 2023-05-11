@@ -1,8 +1,8 @@
+import time
 from functools import reduce
 from collections import Counter, defaultdict
 import copy
 import numpy as np
-import logging
 from log import get_logger
 import utils
 
@@ -210,6 +210,8 @@ class Origami:
         :param level: Level of the matrix
         :return:
         """
+        # we will terminate the program if it takes more than threshold seconds
+        start_time = time.time()
         # We will try to decode multiple origami so we are making the variable empty at the first
         matrix_details = {}
         # Will check the matrix weight first.
@@ -244,6 +246,9 @@ class Origami:
             # we will not check more than the maximum number of error
             while len(error_combination_checked_so_far) < self.config.maximum_error_to_fix and len(
                     errors_that_will_be_checked) >= 1:
+                if self.config.time_out_threshold != -1 and time.time() - start_time > self.config.time_out_threshold:
+                    self.logger.info("Time out occurred")
+                    return None, []
                 # Contains all the matrix weights. Which will be sorted to choose next bit flip
                 matrix_weights = {}
                 for single_error_in_probable_error in errors_that_will_be_checked:
@@ -379,6 +384,7 @@ class Origami:
         :return:
         """
         # We will change few bits (based on changing_locaiton parameter).
+
         # If we don't make a deep copy it will modify the original matrix that was passed.
         matrix_copy = copy.deepcopy(matrix)
         total_false_positive_added = 0  # False positive added from data only
@@ -539,8 +545,10 @@ if __name__ == "__main__":
     from config import Config
 
     config_ = Config('config.yaml')
-    bin_stream = "10101110010001101100000010001100000101000000000100000010001000110001001000111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    config_.create_mapping()
+    bin_stream = "1001001001101110000111001111100001111011101011010010000001100011011111011111101110100111100111110000101101101111011111000100101100011011111110100010100001101010"
     origami_object = Origami(config_)
+
     decoded_data = origami_object.decode(bin_stream)
     print(decoded_data)
 
