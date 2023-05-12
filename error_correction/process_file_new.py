@@ -167,7 +167,8 @@ class ProcessFile:
 
         missing_origami = -1
         # can not check missing origami if file size is not given
-        if hasattr(self.config, 'file_size'):
+        # if hasattr(self.config, 'file_size'):
+        if self.config.file_size is not None:
             file_size_in_bit = 8 * self.config.file_size
             origami_needed = math.ceil(file_size_in_bit / self.config.data_cells_per_origami)
             total_origami_idx_level = set()

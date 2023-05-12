@@ -8,6 +8,7 @@ from find_optimum_mapping import Mapping
 class Config:
     def __init__(self, config_file_path=None):
         # if config path is none search for config.yaml in the current directory
+        self.file_size = None
         self.data_to_parity_mapping_by_level = None
         self.data_cells_per_origami = None
         self.data_to_parity_mapping = None
@@ -23,7 +24,6 @@ class Config:
         self.update(config_file_path)
         # create the mapping as it will require from both encode and decode
         self.create_mapping()
-        self.calculate_additional_parameters()
 
     def update(self, config_file_path):
         with open(config_file_path) as f:
@@ -41,6 +41,7 @@ class Config:
         self.parity_mapping = mapping_details['parity_mapping']
         self.checksum_mapping = mapping_details['checksum_mapping']
         self.cell_purpose = mapping_details['cell_purpose']
+        self.calculate_additional_parameters()
 
     def calculate_additional_parameters(self):
         self.total_cell = self.layer * self.row * self.column

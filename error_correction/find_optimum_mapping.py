@@ -14,12 +14,11 @@ from collections import defaultdict
 import numpy as np
 
 
-random.seed(0)
-
-
 class Mapping:
 
     def __init__(self, config):
+        random.seed(42)
+
         self.config = config
 
         self.total_orientation_bits = config.total_orientation_bit
