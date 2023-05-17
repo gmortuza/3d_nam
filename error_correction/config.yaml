@@ -2,7 +2,7 @@
 row: 8
 column: 10
 layer: 3
-verbose: False
+verbose: True
 
 # Mapping
 parity_coverage: 8 # Each parity bit will have XOR of 8 data bits
