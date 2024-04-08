@@ -57,8 +57,8 @@ def set_random_configuration(config):
     config.column = random.choice(config.sim_cols)
     config.layer = random.choice(config.sim_layers)
     config.parity_coverage = random.choice(config.sim_parity_coverage)
-    config.parity_percent = random.choice(config.sim_parity_percent)
-    config.checksum_percent = random.choice(config.sim_checksum_percent)
+    # config.parity_percent = random.choice(config.sim_parity_percent)
+    # config.checksum_percent = random.choice(config.sim_checksum_percent)
     config.create_mapping()
     config.calculate_additional_parameters()
 
@@ -117,11 +117,11 @@ def degrade(file_in, file_out, number_of_error, config):
     else:
         # evenly distribute errors
         # TODO: need to update this
-        number_of_error = int(total_true_positive_errors / (total_origami * config.layer))
+        errors_per_origami = int(total_true_positive_errors / (total_origami * config.layer))
         for index in range(len(encode_file_list)):
             for layer in range(config.layer):
                 one_cells = np.argwhere(encode_file_arr[index][layer] == 1)
-                random_index = random.sample(range(len(one_cells)), number_of_error)
+                random_index = random.sample(range(len(one_cells)), min(errors_per_origami, len(one_cells)))
                 for idx in random_index:
                     r, c = one_cells[idx]
                     encode_file_list[index][layer][r][c] = 0
@@ -174,8 +174,12 @@ def create_result_file(config):
 
 
 def run_simulation(config):
-    for file_size in list(range(config.sim_file_size[0], config.sim_file_size[1], config.sim_file_size[2])):
+    # for file_size in list(range(config.sim_file_size[0], config.sim_file_size[1], config.sim_file_size[2])):
+    for parity_percent in config.sim_parity_percent:
+        file_size = 1000
         config.file_size = file_size
+        config.parity_coverage = parity_percent
+        set_random_configuration(config)
         test_file_name = SIMULATION_DIRECTORY + "/test_" + str(file_size)
         logger.info("working with file size: {file_size}".format(file_size=file_size))
         # Generate random binary file for encoding
@@ -205,7 +209,7 @@ def run_simulation(config):
                     config.parity_threshold = threshold_parity
                     decoded_file_name = test_file_name + "_decoded_copy_" + str(config.sim_copies_of_each_origamies) + "_error_" + \
                                         str(error_in_each_origami) + "_scp_" + str(threshold_data) + \
-                                        "_tempweight_" + str(threshold_parity)
+                                        "_tempweight_" + str(threshold_parity) + "_parity_coverage_" + str(parity_percent * 100)
                     start_time = time.time()
                     try:
                         decoding_status, incorrect_origami, correct_origami, total_error_fixed, missing_origamies \
@@ -246,7 +250,7 @@ def run_simulation(config):
 
 def main(config):
     # update the config file
-    set_random_configuration(config)
+    # set_random_configuration(config)
     create_result_file(config)
     run_simulation(config)
 

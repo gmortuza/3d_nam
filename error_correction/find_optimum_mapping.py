@@ -234,23 +234,29 @@ class Mapping:
         # define the purpose of each bit(parity, checksum, data, orientation, indexing)
         highest_point = float('-inf')
         for _ in range(self.config.number_of_run):
-            cell_purpose = self.determine_cells_purpose()
-            # get parity mapper
-            current_parity_mapping = self.get_parity_mapping(cell_purpose['parity_cells'],
-                                                             cell_purpose['all_but_parity'])
-            # get checksum mapping
-            current_checksum_mapping = self.get_checksum_mapping(cell_purpose['checksum_cells'],
-                                                                 cell_purpose['all_but_parity_checksum'])
+            try:
+                cell_purpose = self.determine_cells_purpose()
+                # get parity mapper
+                current_parity_mapping = self.get_parity_mapping(cell_purpose['parity_cells'],
+                                                                 cell_purpose['all_but_parity'])
+                # get checksum mapping
+                current_checksum_mapping = self.get_checksum_mapping(cell_purpose['checksum_cells'],
+                                                                     cell_purpose['all_but_parity_checksum'])
 
-            current_parity_mapping_point = self.get_mapping_point(current_parity_mapping)
-            current_checksum_mapping_point = self.get_mapping_point(current_checksum_mapping)
-            total_mapping_point = current_parity_mapping_point + current_checksum_mapping_point
+                current_parity_mapping_point = self.get_mapping_point(current_parity_mapping)
+                current_checksum_mapping_point = self.get_mapping_point(current_checksum_mapping)
+                total_mapping_point = current_parity_mapping_point + current_checksum_mapping_point
+                # print(total_mapping_point)
 
-            if total_mapping_point > highest_point:
-                highest_point = total_mapping_point
-                best_checksum_mapping = current_checksum_mapping
-                best_parity_mapping = current_parity_mapping
-                best_cell_purpose = cell_purpose
+                if total_mapping_point > highest_point:
+                    highest_point = total_mapping_point
+                    best_checksum_mapping = current_checksum_mapping
+                    best_parity_mapping = current_parity_mapping
+                    best_cell_purpose = cell_purpose
+            except Exception as e:
+                pass
+        if highest_point == float('-inf'):
+            raise Exception("No mapping found")
         # combine the best mapping and the best bit purpose
         return {
             'parity_mapping': best_parity_mapping,

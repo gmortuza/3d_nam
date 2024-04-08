@@ -2,6 +2,8 @@ import time
 from functools import reduce
 from collections import Counter, defaultdict
 import copy
+import random
+
 import numpy as np
 from log import get_logger
 import utils
@@ -232,8 +234,8 @@ class Origami:
             # If after altering one bit only matrix_weight becomes zero then we will check checksum and parity
             if matrix_details[tuple(single_error)]["error_value"] == 0:
                 self.logger.info("After altering one bit, all the parity matched")
-                if self.check_checksum(matrix, level):
-                    return matrix, [single_error]
+                if self.check_checksum(changed_matrix, level):
+                    return changed_matrix, [single_error]
         # We will sort the matrix based on the matrix weight
         matrix_details = {k: v for k, v in sorted(matrix_details.items(), key=lambda item: item[1]["error_value"])}
 
@@ -540,15 +542,66 @@ class Origami:
         return True
 
 
+
+def generate_random_binary_string(length):
+    binary_string = ""
+    for _ in range(length):
+        bit = random.choice(["0", "1"])
+        binary_string += bit
+    return binary_string
+
+
+def introduce_errors(bin_stream, num_error):
+    # Convert the binary string to a list for easy modification
+    bin_list = list(bin_stream)
+
+    # Generate a list of indices where '1' is present
+    ones_indices = [i for i, bit in enumerate(bin_list) if bit == '1']
+
+    # Shuffle the indices randomly
+    random.shuffle(ones_indices)
+
+    # Modify the '1' bits to '0' based on the number of errors
+    for i in range(min(num_error, len(ones_indices))):
+        index = ones_indices[i]
+        bin_list[index] = '0'
+
+    # Convert the list back to a string and return
+    modified_bin_stream = ''.join(bin_list)
+    return modified_bin_stream
+
+
 # This is only for debugging purpose
 if __name__ == "__main__":
     from config import Config
 
     config_ = Config('config.yaml')
     config_.create_mapping()
-    bin_stream = "1001001001101110000111001111100001111011101011010010000001100011011111011111101110100111100111110000101101101111011111000100101100011011111110100010100001101010"
     origami_object = Origami(config_)
 
-    decoded_data = origami_object.decode(bin_stream)
-    print(decoded_data)
+    for error in range(3, 25, 3):
+        correct = 0
+        incorrect = 0
+        for _ in range(10):
+            bin_stream = generate_random_binary_string(len(config_.cell_purpose["data_cells"]))
+            binary = origami_object.encode(bin_stream, random.choice(range(error)))
+            modified_binary = introduce_errors(binary, error)
+            try:
+                decoded_data = origami_object.decode(modified_binary)
+            except:
+                decoded_data = -1
+
+            decoded_bin_stream = decoded_data["binary_data"] if decoded_data != -1 else decoded_data
+            if decoded_bin_stream == bin_stream:
+                correct += 1
+            else:
+                incorrect += 1
+        percentage = correct / (correct + incorrect)
+        print(error, '-->', percentage)
+
+    # bin_stream = "1001001001101110000111001111100001111011101011010010000001100011011111011111101110100111100111110000101101101111011111000100101100011011111110100010100001101010"
+    # origami_object = Origami(config_)
+    #
+    # decoded_data = origami_object.decode(bin_stream)
+    # print(decoded_data)
 
